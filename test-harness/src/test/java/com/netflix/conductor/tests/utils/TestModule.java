@@ -69,7 +69,6 @@ public class TestModule extends AbstractModule {
         bind(RedisQueues.class).toProvider(RedisQueuesProvider.class);
 
         bind(MetadataDAO.class).to(RedisMetadataDAO.class);
-        bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
         bind(RateLimitingDAO.class).to(RedisRateLimitingDAO.class);
         bind(EventHandlerDAO.class).to(RedisEventHandlerDAO.class);
         bind(PollDataDAO.class).to(RedisPollDataDAO.class);
@@ -101,7 +100,9 @@ public class TestModule extends AbstractModule {
         });
     }
 
+    // TODO rename
     public void configureQueueDAO() {
         bind(QueueDAO.class).to(DynoQueueDAO.class);
+        bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
     }
 }

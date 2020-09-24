@@ -1438,6 +1438,7 @@ public class WorkflowExecutor {
                     tasksToBeQueued.add(task);
                 }
             }
+            addTaskToQueue(tasksToBeQueued);
         } catch (Exception e) {
             List<String> taskIds = tasks.stream()
                     .map(Task::getTaskId)
@@ -1448,20 +1449,20 @@ public class WorkflowExecutor {
             // TODO Provide a better implementation of rollbackTasks considering all the edge cases.
             // Throwing exception to avoid workflow ending up in irrecoverable state.
             // rollbackTasks(workflow.getWorkflowId(), createdTasks);
-            throw new TerminateWorkflowException(errorMsg);
+//            throw new TerminateWorkflowException(errorMsg);
         }
 
         // On addTaskToQueue failures, ignore the exceptions and let WorkflowRepairService take care of republishing the messages to the queue.
-        try {
-            addTaskToQueue(tasksToBeQueued);
-        } catch (Exception e) {
-            List<String> taskIds = tasksToBeQueued.stream()
-                    .map(Task::getTaskId)
-                    .collect(Collectors.toList());
-            String errorMsg = String.format("Error pushing tasks to the queue: %s, for workflow: %s", taskIds, workflow.getWorkflowId());
-            LOGGER.warn(errorMsg, e);
-            Monitors.error(className, "scheduleTask");
-        }
+//        try {
+//            addTaskToQueue(tasksToBeQueued);
+//        } catch (Exception e) {
+//            List<String> taskIds = tasksToBeQueued.stream()
+//                    .map(Task::getTaskId)
+//                    .collect(Collectors.toList());
+//            String errorMsg = String.format("Error pushing tasks to the queue: %s, for workflow: %s", taskIds, workflow.getWorkflowId());
+//            LOGGER.warn(errorMsg, e);
+//            Monitors.error(className, "scheduleTask");
+//        }
         return startedSystemTasks;
     }
 

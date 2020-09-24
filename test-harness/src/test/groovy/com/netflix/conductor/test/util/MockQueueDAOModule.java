@@ -12,8 +12,15 @@
  */
 package com.netflix.conductor.test.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
+import com.netflix.conductor.config.TestConfiguration;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
+import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.jedis.JedisMock;
 import com.netflix.conductor.tests.utils.TestModule;
 import com.netflix.dyno.connectionpool.Host;
@@ -51,9 +58,22 @@ public class MockQueueDAOModule extends TestModule {
                 return "a";
             }
         };
+
+        // Prepare QueueDAO bindings
         RedisQueues redisQueues = new RedisQueues(jedisMock, jedisMock, "mockedQueues", shardSupplier, 60000, 120000);
         DynoQueueDAO dynoQueueDAO = new DynoQueueDAO(redisQueues);
 
         bind(QueueDAO.class).toInstance(detachedMockFactory.Spy(dynoQueueDAO));
+
+        // Prepare ExecutionDAO bindings
+        DynoProxy dynoClient = new DynoProxy(jedisMock);
+        ObjectMapper objectMapper = new JsonMapperProvider().get();
+        Configuration config = new TestConfiguration();
+        RedisExecutionDAO executionDAO = new RedisExecutionDAO(dynoClient, objectMapper, config);
+
+        bind(ExecutionDAO.class).toInstance(detachedMockFactory.Spy(executionDAO));
+
+        // Prepare MetadataDAO bindings
+        // TODO
     }
 }
