@@ -34,4 +34,4 @@ jobs:
       - name: Build with Gradle
         run: |
           echo "Running build for commit $GITHUB_SHA"
-          ./gradlew build -x javadoc -x test
+          ./gradlew build -x javadoc
