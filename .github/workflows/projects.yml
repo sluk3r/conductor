@@ -1,0 +1,30 @@
+# This workflow adds new issues and pull-requests to a project
+
+name: Project Management
+
+on:
+  issues:
+    types: [ opened, reopened ]
+  pull_request:
+    types: [ opened, reopened ]
+
+jobs:
+  add-new-issues-to-project-column:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: add-new-issues-to-organization-based-project-column
+        uses: docker://takanabe/github-actions-automate-projects:v0.0.1
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
+          GITHUB_PROJECT_URL: https://github.com/Netflix/conductor/projects/6
+          GITHUB_PROJECT_COLUMN_NAME: New
+      - name: add-new-prs-to-repository-based-project-column
+        uses: docker://takanabe/github-actions-automate-projects:v0.0.1
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
+          GITHUB_PROJECT_URL: https://github.com/Netflix/conductor/projects/6
+          GITHUB_PROJECT_COLUMN_NAME: New
