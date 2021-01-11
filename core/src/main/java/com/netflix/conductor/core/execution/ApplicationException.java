@@ -47,11 +47,7 @@ public class ApplicationException extends RuntimeException {
 	}
 	
 	private Code code;
-
-    public boolean isRetryable() {
-        return this.code == Code.BACKEND_ERROR;
-    }
-
+	
 	public ApplicationException(String msg, Throwable t){
 		this(Code.INTERNAL_ERROR, msg, t);
 	}
@@ -91,7 +87,6 @@ public class ApplicationException extends RuntimeException {
 		HashMap<String, Object> map = new LinkedHashMap<>();
 		map.put("code", code.name());
 		map.put("message", super.getMessage());
-		map.put("retryable", isRetryable());
 		return map;
 	}
 }

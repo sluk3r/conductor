@@ -1,5 +1,43 @@
-import http from '../core/HttpClientClientSide';
+import http from '../core/HttpClient';
 
+export function searchWorkflows(query, search, hours, fullstr, start) {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'GET_WORKFLOWS',
+      search: search
+    });
+
+    if(fullstr && search != null && search.length > 0) {
+      search = '"' + search + '"';
+    }
+
+    return http.get('/api/wfe/' + status + '?q=' + query + '&h=' + hours + '&freeText=' + search + '&start=' + start).then((data) => {
+      if(data && data.result && data.result.totalHits > 0){
+        dispatch({
+          type: 'RECEIVED_WORKFLOWS',
+          data
+        });
+      } else if(search !== "") {
+        return searchWorkflowsByTaskId(dispatch, search, hours, start);
+      }
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+function searchWorkflowsByTaskId(dispatch, search, hours, start){
+  return http.get("/api/wfe/search-by-task/" + search + "?h=" + hours + "&start=" + start).then((data) => {
+    dispatch({
+      type: 'RECEIVED_WORKFLOWS',
+      data
+    });
+  });
+}
 
 export function getWorkflowDetails(workflowId){
   return function (dispatch) {
@@ -45,16 +83,15 @@ export function terminateWorkflow(workflowId){
   }
 }
 
-export function restartWorfklow(workflowId, withLatestVersion){
+export function restartWorfklow(workflowId){
   return function (dispatch) {
     dispatch({
       type: 'REQUESTED_RESTART_WORKFLOW',
-      workflowId,
-      withLatestVersion: withLatestVersion || false
+      workflowId
     });
 
 
-    return http.post('/api/wfe/restart/' + workflowId + "?useLatestDefinitions=" + (withLatestVersion || false)).then((data) => {
+    return http.post('/api/wfe/restart/' + workflowId).then((data) => {
       dispatch({
         type: 'RECEIVED_RESTART_WORKFLOW',
         workflowId
@@ -136,10 +173,12 @@ export function resumeWorfklow(workflowId) {
 
 //metadata
 export function getWorkflowDefs() {
+
   return function (dispatch) {
     dispatch({
       type: 'LIST_WORKFLOWS'
     });
+
 
     return http.get('/api/wfe/metadata/workflow').then((data) => {
       dispatch({
@@ -224,6 +263,26 @@ export function getQueueData() {
   }
 }
 
+export function updateWorkflow(workflow){
+  return function (dispatch) {
+    dispatch({
+      type: 'REQUESTED_UPDATE_WORKFLOW_DEF',
+      workflow
+    });
+
+
+    return http.put('/api/wfe/metadata/', workflow).then((data) => {
+      dispatch({
+        type: 'RECEIVED_UPDATE_WORKFLOW_DEF'
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
 
 export function getEventHandlers() {
 
@@ -237,6 +296,50 @@ export function getEventHandlers() {
       dispatch({
         type: 'RECEIVED_LIST_EVENT_HANDLERS',
         events : data
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function getEvents(event, time, query) {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'LIST_EVENT'
+    });
+
+
+    return http.get('/api/events/executions').then((data) => {
+      dispatch({
+        type: 'RECEIVED_LIST_EVENT',
+        events : data
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function getTaskLogs(taskId) {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'GET_TASK_LOGS'
+    });
+
+
+    return http.get('/api/wfe/task/log' + taskId).then((data) => {
+      dispatch({
+        type: 'RECEIVED_GET_TASK_LOGS',
+        logs : data
       });
     }).catch((e) => {
       dispatch({

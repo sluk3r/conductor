@@ -18,8 +18,6 @@
  */
 package com.netflix.conductor.contribs;
 
-import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
@@ -30,7 +28,6 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.nats.NATSEventQueueProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Scheduler;
 
 
 /**
@@ -48,9 +45,9 @@ public class NatsModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("nats")
 	@Singleton
-	@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
-	public EventQueueProvider getNATSEventQueueProvider(Configuration configuration, Scheduler scheduler) {
-		return new NATSEventQueueProvider(configuration, scheduler);
+	@Named("EventQueueProviders")
+	public EventQueueProvider getNATSEventQueueProvider(Configuration configuration) {
+		return new NATSEventQueueProvider(configuration);
 	}
 	
 }

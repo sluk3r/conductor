@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { Component } from 'react';
+import { Link } from 'react-router';
+import { Breadcrumb, BreadcrumbItem, Grid, Row, Col, Well, OverlayTrigger,Button,Popover, Panel } from 'react-bootstrap';
+import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
 import { getWorkflowDetails } from '../../../actions/WorkflowActions';
+import WorkflowAction  from '../executions/WorkflowAction';
 import dagreD3 from 'dagre-d3'
 import d3 from 'd3'
 
-class WorkflowDia extends React.Component {
+class WorkflowDia extends Component {
+
+
+  constructor(props) {
+    super(props);
+  }
+
   componentWillReceiveProps(nextProps) {
     if (this.props.hash != nextProps.hash) {
       console.log('id=' + nextProps.params.workflowId);
@@ -34,6 +44,7 @@ class WorkflowDia extends React.Component {
     //let tasks = wf['tasks'].map(task => {return task.taskType;});
     var g = new dagreD3.graphlib.Graph().setGraph({rankdir: 'TD'});
 
+
     tasks.forEach(function(task) {
       let shape = 'rect';
       if(task.taskType == 'decision'){
@@ -45,6 +56,7 @@ class WorkflowDia extends React.Component {
       g.setNode(task.taskType, { label: task.taskType, shape: shape, output: output});
 
     });
+
 
     for(let i = 1; i < tasks.length; i++){
       let label = '';
@@ -83,5 +95,4 @@ class WorkflowDia extends React.Component {
     );
   }
 };
-
 export default connect(state => state.workflow)(WorkflowDia);

@@ -1,5 +1,5 @@
-/*
- * Copyright 2020 Netflix, Inc.
+/**
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
 package com.netflix.conductor.dao;
 
+import java.util.Comparator;
+import java.util.List;
+
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
-import java.util.List;
+import com.netflix.conductor.core.events.queue.Message;
 
 /**
  * @author Viren
@@ -76,10 +84,24 @@ public interface ExecutionDAO {
 	
 	/**
 	 * 
-	 * @param taskId id of the task to be removed.
-	 * @return true if the deletion is successful, false otherwise.
+	 * @param tasks Multiple tasks to be updated
+	 *  
 	 */
-	boolean removeTask(String taskId);
+	void updateTasks(List<Task> tasks);
+
+	/**
+	 * 
+	 * @param log Task Execution Log to be added
+	 *  
+	 */
+	void addTaskExecLog(List<TaskExecLog> log);
+	
+	/**
+	 * 
+	 * @param taskId id of the task to be removed.
+	 *  
+	 */
+	void removeTask(String taskId);
 
 	/**
 	 * 
@@ -103,7 +125,7 @@ public interface ExecutionDAO {
 	 * @return List of pending tasks
 	 * 
 	 */
-	List<Task> getPendingTasksForTaskType(String taskType);
+	public List<Task> getPendingTasksForTaskType(String taskType);
 
 	/**
 	 * 
@@ -132,20 +154,11 @@ public interface ExecutionDAO {
 	/**
 	 *
 	 * @param workflowId workflow instance id
-	 * @return true if the deletion is successful, false otherwise
+	 * @param archiveWorkflow if true, archives the workflow in elasticsearch, else, removes the workflow completely
+	 *  
 	 */
-	boolean removeWorkflow(String workflowId);
-
-
-	/**
-	 * Removes the workflow with ttl seconds
-	 *
-	 * @param workflowId workflowId workflow instance id
-	 * @param ttlSeconds time to live in seconds.
-	 * @return
-	 */
-	boolean removeWorkflowWithExpiry(String workflowId, int ttlSeconds);
-
+	void removeWorkflow(String workflowId, boolean archiveWorkflow);
+	
 	/**
 	 * 
 	 * @param workflowType Workflow Type
@@ -164,25 +177,26 @@ public interface ExecutionDAO {
 	/**
 	 * 
 	 * @param workflowId workflow instance id
-	 * @param includeTasks if set, includes the tasks (pending and completed) sorted by Task Sequence number in Workflow.
+	 * @param includeTasks if set, includes the tasks (pending and completed)
 	 * @return Workflow instance details
 	 *  
 	 */
 	Workflow getWorkflow(String workflowId, boolean includeTasks);
 
 	/**
-	 * @param workflowName name of the workflow
-	 * @param version the workflow version
+	 * 
+	 * @param workflowName Name of the workflow
 	 * @return List of workflow ids which are running
 	 */
-	List<String> getRunningWorkflowIds(String workflowName, int version);
+	List<String> getRunningWorkflowIds(String workflowName);
 
 	/**
+	 * 
 	 * @param workflowName Name of the workflow
-	 * @param version the workflow version
 	 * @return List of workflows that are running
+	 *  
 	 */
-	List<Workflow> getPendingWorkflowsByType(String workflowName, int version);
+	List<Workflow> getPendingWorkflowsByType(String workflowName);
 
 	/**
 	 * 
@@ -209,30 +223,23 @@ public interface ExecutionDAO {
 
 	/**
 	 * 
-	 * @param workflowName workflow name
 	 * @param correlationId Correlation Id
 	 * @param includeTasks Option to includeTasks in results
 	 * @return List of workflows by correlation id
 	 *  
 	 */
-	List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks);
+	List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks);
 
-	/**
-	 *
-	 * @return true, if the DAO implementation is capable of searching across workflows
-	 * false, if the DAO implementation cannot perform searches across workflows (and needs to use indexDAO)
-	 */
-	boolean canSearchAcrossWorkflows();
 
 	//Events
 	
 	/**
 	 * 
 	 * @param ee Event Execution to be stored
-	 * @return true if the event was added.  false otherwise when the event by id is already stored.
+	 * @return true if the event was added.  false otherwise when the event by id is already already stored.
 	 */
 	boolean addEventExecution(EventExecution ee);
-
+	
 	/**
 	 * 
 	 * @param ee Event execution to be updated
@@ -240,8 +247,26 @@ public interface ExecutionDAO {
 	void updateEventExecution(EventExecution ee);
 
 	/**
-	 *
-	 * @param ee Event execution to be removed
+	 * 
+	 * @param eventHandlerName Name of the event handler
+	 * @param eventName Event Name
+	 * @param messageId ID of the message received
+	 * @param max max number of executions to return
+	 * @return list of matching events
 	 */
-	void removeEventExecution(EventExecution ee);
+	List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
+
+	/**
+	 * Adds an incoming external message into the store/index
+	 * @param queue Name of the registered queue
+	 * @param msg Message
+	 */
+	void addMessage(String queue, Message msg);
+	
+	void updateLastPoll(String taskDefName, String domain, String workerId);
+	
+	PollData getPollData(String taskDefName, String domain);
+
+	List<PollData> getPollData(String taskDefName);
+
 }

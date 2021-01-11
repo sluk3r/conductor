@@ -37,7 +37,6 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 import io.nats.client.NUID;
 import rx.Observable;
-import rx.Scheduler;
 
 /**
  * @author Oleksiy Lysak
@@ -46,30 +45,27 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     private static Logger logger = LoggerFactory.getLogger(NATSAbstractQueue.class);
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
     protected final Lock mu = new ReentrantLock();
-    private final String queueType;
+    private String queueType;
     private ScheduledExecutorService execs;
-    private final Scheduler scheduler;
-
-    final String queueURI;
-    protected final String subject;
-    protected String queue;
-
+    String queueURI;
+    String subject;
+    String queue;
+    
     // Indicates that observe was called (Event Handler) and we must to re-initiate subscription upon reconnection
     private boolean observable;
     private boolean isOpened;
     
-    NATSAbstractQueue(String queueURI, String queueType, Scheduler scheduler) {
+    NATSAbstractQueue(String queueURI, String queueType) {
         this.queueURI = queueURI;
         this.queueType = queueType;
-        this.scheduler = scheduler;
         
         // If queue specified (e.g. subject:queue) - split to subject & queue
         if (queueURI.contains(":")) {
             this.subject = queueURI.substring(0, queueURI.indexOf(':'));
-            queue = queueURI.substring(queueURI.indexOf(':') + 1);
+            this.queue = queueURI.substring(queueURI.indexOf(':') + 1);
         } else {
             this.subject = queueURI;
-            queue = null;
+            this.queue = null;
         }
         logger.info(String.format("Initialized with queueURI=%s, subject=%s, queue=%s", queueURI, subject, queue));
     }
@@ -98,7 +94,7 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
         }
         
         Observable.OnSubscribe<Message> onSubscribe = subscriber -> {
-            Observable<Long> interval = Observable.interval(100, TimeUnit.MILLISECONDS, scheduler);
+            Observable<Long> interval = Observable.interval(100, TimeUnit.MILLISECONDS);
             interval.flatMap((Long x) -> {
                 List<Message> available = new LinkedList<>();
                 messages.drainTo(available);
@@ -165,11 +161,6 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
                 throw new RuntimeException(ex);
             }
         });
-    }
-
-    @Override
-    public boolean rePublishIfNoAck() {
-        return true;
     }
     
     @Override

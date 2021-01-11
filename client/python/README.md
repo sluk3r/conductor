@@ -1,16 +1,13 @@
 # Python client for Conductor
-Python client for Conductor provides two sets of functions:
+Python clinet for Conductor provides two sets of functions:
 
 1. Workflow management APIs (start, terminate, get workflow status etc.)
 2. Worker execution framework
 
 ## Install
 
-```Using virtualenv
-   virtualenv conductorclient
-   source conductorclient/bin/activate
-   cd ../conductor/client/python
-   python setup.py install
+```shell
+pip install conductor
 ```
 
 ## Using Workflow Management API
@@ -42,19 +39,18 @@ The API provides necessary mechanism to poll for task work at regular interval a
 The following python script demonstrates workers for the kitchensink workflow.
 
 ```python
-from __future__ import print_function
 from conductor.ConductorWorker import ConductorWorker
 
 def execute(task):
-	return {'status': 'COMPLETED', 'output': {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0}, 'logs': ['one', 'two']}
+	return {'status': 'COMPLETED', 'output': {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0}}
 
 def execute4(task):
 	forkTasks = [{"name": "task_1", "taskReferenceName": "task_1_1", "type": "SIMPLE"},{"name": "sub_workflow_4", "taskReferenceName": "wf_dyn", "type": "SUB_WORKFLOW", "subWorkflowParam": {"name": "sub_flow_1"}}];
 	input = {'task_1_1': {}, 'wf_dyn': {}}
-	return {'status': 'COMPLETED', 'output': {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0, 'dynamicTasks': forkTasks, 'inputs': input}, 'logs': ['one','two']}
+	return {'status': 'COMPLETED', 'output': {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0, 'dynamicTasks': forkTasks, 'inputs': input}}
 
 def main():
-	print('Starting Kitchensink workflows')
+	print 'Hello World'
 	cc = ConductorWorker('http://localhost:8080/api', 1, 0.1)
 	for x in range(1, 30):
 		if(x == 4):

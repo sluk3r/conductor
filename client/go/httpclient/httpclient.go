@@ -14,11 +14,10 @@
 package httpclient
 
 import (
-    "bytes"
-    "fmt"
-    "io/ioutil"
     "log"
     "net/http"
+    "io/ioutil"
+    "bytes"
     "strings"
 )
 
@@ -26,7 +25,6 @@ type HttpClient struct {
     BaseUrl string
     Headers map[string]string
     PrintLogs bool
-    client    *http.Client
 }
 
 func NewHttpClient(baseUrl string, headers map[string]string, printLogs bool) *HttpClient {
@@ -34,7 +32,6 @@ func NewHttpClient(baseUrl string, headers map[string]string, printLogs bool) *H
     httpClient.BaseUrl = baseUrl
     httpClient.Headers = headers
     httpClient.PrintLogs = printLogs
-    httpClient.client = &http.Client{}
     return httpClient
 }
 
@@ -94,17 +91,10 @@ func (c *HttpClient) httpRequest(url string, requestType string, headers map[str
         c.logSendRequest(url, requestType, body)
     }
 
-    resp, err := c.client.Do(req)
+    client := &http.Client{}
+    resp, err := client.Do(req)
     if err != nil {
         return "", err
-    }
-
-    // If successful HTTP call, but Client/Server error, we return error
-    if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-        return "", fmt.Errorf("%d Http Client Error for url: %s", resp.StatusCode, url)
-    }
-    if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-        return "", fmt.Errorf("%d Http Server Error for url: %s", resp.StatusCode, url)
     }
 
     defer resp.Body.Close()

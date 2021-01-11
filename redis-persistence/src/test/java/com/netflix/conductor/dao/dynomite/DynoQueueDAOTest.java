@@ -1,5 +1,5 @@
-/*
- * Copyright 2019 Netflix, Inc.
+/**
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,27 @@ package com.netflix.conductor.dao.dynomite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import com.netflix.conductor.config.TestConfiguration;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
-import com.netflix.conductor.dao.redis.JedisMock;
-import com.netflix.dyno.connectionpool.Host;
-import com.netflix.dyno.queues.ShardSupplier;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import redis.clients.jedis.commands.JedisCommands;
+
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.config.TestConfiguration;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
+import com.netflix.conductor.dao.redis.JedisMock;
+import com.netflix.dyno.queues.ShardSupplier;
+
+import redis.clients.jedis.JedisCommands;
 
 /**
  * 
@@ -42,25 +47,30 @@ import redis.clients.jedis.commands.JedisCommands;
  */
 public class DynoQueueDAOTest {
 
-	private QueueDAO queueDAO;
+	private QueueDAO dao;
+
+	private static ObjectMapper om = new ObjectMapper();
+
+	static {
+		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+		om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+		om.setSerializationInclusion(Include.NON_NULL);
+		om.setSerializationInclusion(Include.NON_EMPTY);
+	}
 
 	@Before
-	public void init() {
+	public void init() throws Exception {
 		JedisCommands jedisMock = new JedisMock();
-		queueDAO = new DynoQueueDAO(jedisMock, jedisMock, new ShardSupplier() {
+		dao = new DynoQueueDAO(jedisMock, jedisMock, new ShardSupplier() {
 
 			@Override
 			public Set<String> getQueueShards() {
-				return new HashSet<>(Collections.singletonList("a"));
+				return Arrays.asList("a").stream().collect(Collectors.toSet());
 			}
 
 			@Override
 			public String getCurrentShard() {
-				return "a";
-			}
-
-			@Override
-			public String getShardForHost(Host host) {
 				return "a";
 			}
 		}, new TestConfiguration());
@@ -76,65 +86,67 @@ public class DynoQueueDAOTest {
 		
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
-			queueDAO.push(queueName, messageId, offsetTimeInSecond);
+			dao.push(queueName, messageId, offsetTimeInSecond);
 		}
-		int size = queueDAO.getSize(queueName);
+		int size = dao.getSize(queueName);
 		assertEquals(10, size);
-		Map<String, Long> details = queueDAO.queuesDetail();
+		Map<String, Long> details = dao.queuesDetail();
 		assertEquals(1, details.size());
 		assertEquals(10L, details.get(queueName).longValue());
 		
 		
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
-			queueDAO.pushIfNotExists(queueName, messageId, offsetTimeInSecond);
+			dao.pushIfNotExists(queueName, messageId, offsetTimeInSecond);
 		}
 		
-		List<String> popped = queueDAO.pop(queueName, 10, 100);
+		List<String> popped = dao.pop(queueName, 10, 100);
 		assertNotNull(popped);
 		assertEquals(10, popped.size());
 		
-		Map<String, Map<String, Map<String, Long>>> verbose = queueDAO.queuesDetailVerbose();
+		Map<String, Map<String, Map<String, Long>>> verbose = dao.queuesDetailVerbose();
 		assertEquals(1, verbose.size());
 		long shardSize = verbose.get(queueName).get("a").get("size");
 		long unackedSize = verbose.get(queueName).get("a").get("uacked");
 		assertEquals(0, shardSize);
 		assertEquals(10, unackedSize);
 		
-		popped.forEach(messageId -> queueDAO.ack(queueName, messageId));
+		popped.forEach(messageId -> dao.ack(queueName, messageId));
 		
-		verbose = queueDAO.queuesDetailVerbose();
+		verbose = dao.queuesDetailVerbose();
 		assertEquals(1, verbose.size());
 		shardSize = verbose.get(queueName).get("a").get("size");
 		unackedSize = verbose.get(queueName).get("a").get("uacked");
 		assertEquals(0, shardSize);
 		assertEquals(0, unackedSize);
 		
-		popped = queueDAO.pop(queueName, 10, 100);
+		popped = dao.pop(queueName, 10, 100);
 		assertNotNull(popped);
 		assertEquals(0, popped.size());
 		
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
-			queueDAO.pushIfNotExists(queueName, messageId, offsetTimeInSecond);
+			dao.pushIfNotExists(queueName, messageId, offsetTimeInSecond);
 		}
-		size = queueDAO.getSize(queueName);
+		size = dao.getSize(queueName);
 		assertEquals(10, size);
 		
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
-			queueDAO.remove(queueName, messageId);
+			dao.remove(queueName, messageId);
 		}
 		
-		size = queueDAO.getSize(queueName);
+		size = dao.getSize(queueName);
 		assertEquals(0, size);
 		
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
-			queueDAO.pushIfNotExists(queueName, messageId, offsetTimeInSecond);
+			dao.pushIfNotExists(queueName, messageId, offsetTimeInSecond);
 		}
-		queueDAO.flush(queueName);
-		size = queueDAO.getSize(queueName);
+		dao.flush(queueName);
+		size = dao.getSize(queueName);
 		assertEquals(0, size);
+		
 	}
+
 }

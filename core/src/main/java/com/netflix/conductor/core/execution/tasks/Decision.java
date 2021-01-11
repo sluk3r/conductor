@@ -34,8 +34,9 @@ public class Decision extends WorkflowSystemTask {
 	}
 	
 	@Override
-	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
+	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
 		task.setStatus(Status.COMPLETED);
 		return true;
 	}
+
 }

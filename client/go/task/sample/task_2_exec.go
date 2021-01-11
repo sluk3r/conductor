@@ -15,7 +15,7 @@ package sample
 
 import (
 	"log"
-	"github.com/netflix/conductor/client/go/task"
+	"conductor/task"
 )
 
 // Implementation for "task_2"

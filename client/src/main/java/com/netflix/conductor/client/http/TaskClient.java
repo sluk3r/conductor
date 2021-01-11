@@ -16,40 +16,39 @@
 package com.netflix.conductor.client.http;
 
 import com.google.common.base.Preconditions;
-import com.netflix.conductor.client.config.ConductorClientConfiguration;
-import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
-import com.netflix.conductor.client.exceptions.ConductorClientException;
-import com.netflix.conductor.client.telemetry.MetricsContainer;
+import com.google.common.io.CountingOutputStream;
+import com.netflix.conductor.client.task.WorkflowTaskMetrics;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author visingh
  * @author Viren
  * Client for conductor task management including polling for task, updating task status etc.
  */
+@SuppressWarnings("unchecked")
 public class TaskClient extends ClientBase {
 
     private static GenericType<List<Task>> taskList = new GenericType<List<Task>>() {
+    };
+
+    private static GenericType<List<TaskDef>> taskDefList = new GenericType<List<TaskDef>>() {
     };
 
     private static GenericType<List<TaskExecLog>> taskExecLogList = new GenericType<List<TaskExecLog>>() {
@@ -61,23 +60,20 @@ public class TaskClient extends ClientBase {
     private static GenericType<SearchResult<TaskSummary>> searchResultTaskSummary = new GenericType<SearchResult<TaskSummary>>() {
     };
 
-    private static GenericType<Map<String, Integer>> queueSizeMap = new GenericType<Map<String, Integer>>() {
-    };
-
     private static final Logger logger = LoggerFactory.getLogger(TaskClient.class);
 
     /**
      * Creates a default task client
      */
     public TaskClient() {
-        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
+        super();
     }
 
     /**
      * @param config REST Client configuration
      */
     public TaskClient(ClientConfig config) {
-        this(config, new DefaultConductorClientConfiguration(), null);
+        super(config);
     }
 
     /**
@@ -85,26 +81,16 @@ public class TaskClient extends ClientBase {
      * @param handler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
      */
     public TaskClient(ClientConfig config, ClientHandler handler) {
-        this(config, new DefaultConductorClientConfiguration(), handler);
+        super(config, handler);
     }
 
     /**
-     * @param config  REST Client configuration
-     * @param handler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param config  config REST Client configuration
+     * @param handler handler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
      * @param filters Chain of client side filters to be applied per request
      */
     public TaskClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
-        this(config, new DefaultConductorClientConfiguration(), handler, filters);
-    }
-
-    /**
-     * @param config              REST Client configuration
-     * @param clientConfiguration Specific properties configured for the client, see {@link ConductorClientConfiguration}
-     * @param handler             Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
-     * @param filters             Chain of client side filters to be applied per request
-     */
-    public TaskClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler, ClientFilter... filters) {
-        super(config, clientConfiguration, handler);
+        super(config, handler);
         for (ClientFilter filter : filters) {
             super.client.addFilter(filter);
         }
@@ -120,13 +106,20 @@ public class TaskClient extends ClientBase {
      */
     public Task pollTask(String taskType, String workerId, String domain) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(domain), "Domain cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
 
         Object[] params = new Object[]{"workerid", workerId, "domain", domain};
-        Task task = Optional.ofNullable(getForEntity("tasks/poll/{taskType}", params, Task.class, taskType))
-            .orElse(new Task());
-        populateTaskPayloads(task);
-        return task;
+        return getForEntity("tasks/poll/{taskType}", params, Task.class, taskType);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #batchPollTasksByTaskType(String, String, int, int)} instead
+     */
+    @Deprecated
+    public List<Task> poll(String taskType, String workerId, int count, int timeoutInMillisecond) {
+        return batchPollTasksByTaskType(taskType, workerId, count, timeoutInMillisecond);
     }
 
     /**
@@ -144,9 +137,16 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(count > 0, "Count must be greater than 0");
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond};
-        List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
-        tasks.forEach(this::populateTaskPayloads);
-        return tasks;
+        return getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #batchPollTasksInDomain(String, String, String, int, int)} instead
+     */
+    @Deprecated
+    public List<Task> poll(String taskType, String domain, String workerId, int count, int timeoutInMillisecond) {
+        return batchPollTasksInDomain(taskType, domain, workerId, count, timeoutInMillisecond);
     }
 
     /**
@@ -165,27 +165,16 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(count > 0, "Count must be greater than 0");
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond, "domain", domain};
-        List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
-        tasks.forEach(this::populateTaskPayloads);
-        return tasks;
+        return getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
     }
 
     /**
-     * Populates the task input/output from external payload storage if the external storage path is specified.
-     *
-     * @param task the task for which the input is to be populated.
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #getPendingTasksByType(String, String, Integer)} instead
      */
-    private void populateTaskPayloads(Task task) {
-        if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
-            MetricsContainer.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.TASK_INPUT.name());
-            task.setInputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_INPUT, task.getExternalInputPayloadStoragePath()));
-            task.setExternalInputPayloadStoragePath(null);
-        }
-        if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
-            MetricsContainer.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), PayloadType.TASK_OUTPUT.name());
-            task.setOutputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_OUTPUT, task.getExternalOutputPayloadStoragePath()));
-            task.setExternalOutputPayloadStoragePath(null);
-        }
+    @Deprecated
+    public List<Task> getTasks(String taskType, String startKey, Integer count) {
+        return getPendingTasksByType(taskType, startKey, count);
     }
 
     /**
@@ -219,45 +208,29 @@ public class TaskClient extends ClientBase {
 
     /**
      * Updates the result of a task execution.
-     * If the size of the task output payload is bigger than {@link ConductorClientConfiguration#getTaskOutputPayloadThresholdKB()},
-     * it is uploaded to {@link ExternalPayloadStorage}, if enabled, else the task is marked as FAILED_WITH_TERMINAL_ERROR.
      *
-     * @param taskResult the {@link TaskResult} of the executed task to be updated.
+     * @param taskResult TaskResults to be updated.
+     * @param taskType
      */
-    public void updateTask(TaskResult taskResult) {
+    public void updateTask(TaskResult taskResult, String taskType) {
         Preconditions.checkNotNull(taskResult, "Task result cannot be null");
-        postForEntityWithRequestOnly("tasks", taskResult);
-    }
 
-    public void evaluateAndUploadLargePayload(TaskResult taskResult, String taskType) {
-        Preconditions.checkNotNull(taskResult, "Task result cannot be null");
-        Preconditions.checkArgument(StringUtils.isBlank(taskResult.getExternalOutputPayloadStoragePath()), "External Storage Path must not be set");
-
-        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-            objectMapper.writeValue(byteArrayOutputStream, taskResult.getOutputData());
-            byte[] taskOutputBytes = byteArrayOutputStream.toByteArray();
-            long taskResultSize = taskOutputBytes.length;
-            MetricsContainer.recordTaskResultPayloadSize(taskType, taskResultSize);
-
-            long payloadSizeThreshold = conductorClientConfiguration.getTaskOutputPayloadThresholdKB() * 1024;
-            if (taskResultSize > payloadSizeThreshold) {
-                if (!conductorClientConfiguration.isExternalPayloadStorageEnabled()
-                        || taskResultSize > conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB() * 1024) {
-                    taskResult.setReasonForIncompletion(String.format("The TaskResult payload size: %d is greater than the permissible %d MB", taskResultSize, payloadSizeThreshold));
-                    taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
-                    taskResult.setOutputData(null);
-                } else {
-                    MetricsContainer.incrementExternalPayloadUsedCount(taskType, ExternalPayloadStorage.Operation.WRITE.name(), ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
-                    String externalStoragePath = uploadToExternalPayloadStorage(ExternalPayloadStorage.PayloadType.TASK_OUTPUT, taskOutputBytes, taskResultSize);
-                    taskResult.setExternalOutputPayloadStoragePath(externalStoragePath);
-                    taskResult.setOutputData(null);
-                }
+        long taskResultSize = 0;
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             CountingOutputStream countingOutputStream = new CountingOutputStream(byteArrayOutputStream)) {
+            objectMapper.writeValue(countingOutputStream, taskResult);
+            taskResultSize = countingOutputStream.getCount();
+            WorkflowTaskMetrics.recordTaskResultPayloadSize(taskType, taskResultSize);
+            if (taskResultSize > (3 * 1024 * 1024)) { //There is hard coded since there is no easy way to pass a config in here
+                taskResult.setReasonForIncompletion(String.format("The TaskResult payload: %d is greater than the permissible 3MB", taskResultSize));
+                taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+                taskResult.setOutputData(null);
             }
-        } catch (IOException e) {
-            String errorMsg = String.format("Unable to update task: %s with task result", taskResult.getTaskId());
-            logger.error(errorMsg, e);
-            throw new ConductorClientException(errorMsg, e);
+        } catch (Exception e) {
+            logger.error("Unable to parse the TaskResult: {}", taskResult);
+            throw new RuntimeException(e);
         }
+        postForEntity("tasks", taskResult);
     }
 
     /**
@@ -275,6 +248,15 @@ public class TaskClient extends ClientBase {
     }
 
     /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #logMessageForTask(String, String)} instead
+     */
+    @Deprecated
+    public void log(String taskId, String logMessage) {
+        logMessageForTask(taskId, logMessage);
+    }
+
+    /**
      * Log execution messages for a task.
      *
      * @param taskId     id of the task
@@ -282,7 +264,7 @@ public class TaskClient extends ClientBase {
      */
     public void logMessageForTask(String taskId, String logMessage) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
-        postForEntityWithRequestOnly("tasks/" + taskId + "/log", logMessage);
+        postForEntity("tasks/" + taskId + "/log", logMessage);
     }
 
     /**
@@ -293,6 +275,15 @@ public class TaskClient extends ClientBase {
     public List<TaskExecLog> getTaskLogs(String taskId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
         return getForEntity("tasks/{taskId}/log", null, taskExecLogList, taskId);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #getTaskDetails(String)} instead
+     */
+    @Deprecated
+    public Task get(String taskId) {
+        return getTaskDetails(taskId);
     }
 
     /**
@@ -322,9 +313,9 @@ public class TaskClient extends ClientBase {
     public int getQueueSizeForTask(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
 
-        Map<String, Integer> taskTypeToQueueSizeMap = getForEntity("tasks/queue/sizes", new Object[]{"taskType", taskType}, queueSizeMap);
-        if (taskTypeToQueueSizeMap.containsKey(taskType)) {
-            return taskTypeToQueueSizeMap.get(taskType);
+        Map<String, Integer> queueSizeMap = getForEntity("tasks/queue/sizes", new Object[]{"taskType", taskType}, Map.class);
+        if (queueSizeMap.keySet().contains(taskType)) {
+            return queueSizeMap.get(taskType);
         }
         return 0;
     }
@@ -393,5 +384,44 @@ public class TaskClient extends ClientBase {
     public SearchResult<TaskSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
         Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query", query};
         return getForEntity("tasks/search", params, searchResultTaskSummary);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#getAllTaskDefs()} instead
+     */
+    @Deprecated
+    public List<TaskDef> getTaskDef() {
+        return getForEntity("metadata/taskdefs", null, taskDefList);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#getTaskDef(String)} instead
+     */
+    @Deprecated
+    public TaskDef getTaskDef(String taskType) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        return getForEntity("metadata/taskdefs/{tasktype}", null, TaskDef.class, taskType);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#unregisterTaskDef(String)} instead
+     */
+    @Deprecated
+    public void unregisterTaskDef(String taskType) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        delete("metadata/taskdefs/{tasktype}", taskType);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#registerTaskDefs(List)} instead
+     */
+    @Deprecated
+    public void registerTaskDefs(List<TaskDef> taskDefs) {
+        Preconditions.checkNotNull(taskDefs, "Task defs cannot be null");
+        postForEntity("metadata/taskdefs", taskDefs);
     }
 }

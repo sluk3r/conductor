@@ -46,9 +46,12 @@ public interface Worker {
     TaskResult execute(Task task);
 
     /**
-     * This method has been marked as deprecated and will be removed in a future release.
+     * Callback used by the WorkflowTaskCoordinator before a task is acke'ed.
+     * Workers can implement the callback to get notified before the task is ack'ed.
+     *
+     * @param task Task to be ack'ed before execution
+     * @return True, if the task should be accepted and acknowledged.  execute() method is called ONLY when this method returns true.  Return false if the task cannot be accepted for whatever reason.
      */
-    @Deprecated
     default boolean preAck(Task task) {
         return true;
     }
@@ -92,9 +95,10 @@ public interface Worker {
     }
 
     /**
-     * This method has been marked as deprecated and will be removed in a future release.
+     * Override this method to change the number of tasks to be polled.
+     *
+     * @return the number of tasks to be polled for
      */
-    @Deprecated
     default int getPollCount() {
         return PropertyFactory.getInteger(getTaskDefName(), "pollCount", 1);
     }
@@ -109,9 +113,11 @@ public interface Worker {
     }
 
     /**
-     * This method has been marked as deprecated and will be removed in a future release.
+     * The client will wait for at-least specified timeout in milliseconds for task queue to be "filled".
+     * Use a higher number here as opposed to more frequent polls.  Helps reduce the excessive calls.
+     *
+     * @return Time to wait when making a poll to workflow server for tasks.
      */
-    @Deprecated
     default int getLongPollTimeoutInMS() {
         return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
     }

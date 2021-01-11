@@ -30,27 +30,25 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.contribs.queue.nats.NATSStreamObservableQueue;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 import io.nats.client.Nats;
-import rx.Scheduler;
 
 /**
  * @author Oleksiy Lysak
  */
 @Singleton
 public class NATSStreamEventQueueProvider implements EventQueueProvider {
-    private static final Logger logger = LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
-    protected final Map<String, NATSStreamObservableQueue> queues = new ConcurrentHashMap<>();
-    private final String durableName;
-    private final String clusterId;
-    private final String natsUrl;
-    private final Scheduler scheduler;
+    private static Logger logger = LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
+    protected Map<String, NATSStreamObservableQueue> queues = new ConcurrentHashMap<>();
+    private String durableName;
+    private String clusterId;
+    private String natsUrl;
     
     @Inject
-    public NATSStreamEventQueueProvider(Configuration config, Scheduler scheduler) {
+    public NATSStreamEventQueueProvider(Configuration config) {
         logger.info("NATS Stream Event Queue Provider init");
-        this.scheduler = scheduler;
         
         // Get NATS Streaming options
         clusterId = config.getProperty("io.nats.streaming.clusterId", "test-cluster");
@@ -64,7 +62,7 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
     
     @Override
     public ObservableQueue getQueue(String queueURI) {
-        NATSStreamObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSStreamObservableQueue(clusterId, natsUrl, durableName, queueURI, scheduler));
+        NATSStreamObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSStreamObservableQueue(clusterId, natsUrl, durableName, queueURI));
         if (queue.isClosed()) {
             queue.open();
         }

@@ -18,18 +18,18 @@
  */
 package com.netflix.conductor.core.events.sqs;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
-import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
-import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import rx.Scheduler;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
+import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.EventQueues;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 /**
  * @author Viren
@@ -38,33 +38,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 public class SQSEventQueueProvider implements EventQueueProvider {
 
-	private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
-	private final AmazonSQSClient client;
-	private final int batchSize;
-	private final int pollTimeInMS;
-	private final int visibilityTimeoutInSeconds;
-	private final Scheduler scheduler;
+	private Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
+	
+	private AmazonSQSClient client;
 	
 	@Inject
-	public SQSEventQueueProvider(AmazonSQSClient client, Configuration config, Scheduler scheduler) {
+	public SQSEventQueueProvider(AmazonSQSClient client) {
 		this.client = client;
-		this.batchSize = config.getIntProperty("workflow.event.queues.sqs.batchSize", 1);
-		this.pollTimeInMS = config.getIntProperty("workflow.event.queues.sqs.pollTimeInMS", 100);
-		this.visibilityTimeoutInSeconds = config.getIntProperty("workflow.event.queues.sqs.visibilityTimeoutInSeconds", 60);
-		this.scheduler = scheduler;
 	}
 	
 	@Override
 	public ObservableQueue getQueue(String queueURI) {
 		return queues.computeIfAbsent(queueURI, q -> {
 			Builder builder = new SQSObservableQueue.Builder();
-			return builder.withBatchSize(this.batchSize)
-					.withClient(client)
-					.withPollTimeInMS(this.pollTimeInMS)
-					.withQueueName(queueURI)
-					.withVisibilityTimeout(this.visibilityTimeoutInSeconds)
-					.withScheduler(scheduler)
-					.build();
+			SQSObservableQueue queue = builder.withBatchSize(1).withClient(client).withPollTimeInMS(100).withQueueName(queueURI).withVisibilityTimeout(60).build();
+			return queue;
 		});
 	}
+
 }

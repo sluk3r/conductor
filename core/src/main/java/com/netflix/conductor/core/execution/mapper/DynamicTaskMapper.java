@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2018 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.netflix.conductor.core.execution.mapper;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -28,27 +28,29 @@ import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DYNAMIC}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#DYNAMIC}
  * to a {@link Task} based on definition derived from the dynamic task name defined in {@link WorkflowTask#getInputParameters()}
  */
 public class DynamicTaskMapper implements TaskMapper {
 
-    private static final Logger logger = LoggerFactory.getLogger(DynamicTaskMapper.class);
+    public static final Logger logger = LoggerFactory.getLogger(DynamicTaskMapper.class);
 
-    private final ParametersUtils parametersUtils;
-    private final MetadataDAO metadataDAO;
+    private MetadataDAO metadataDAO;
+
+    private ParametersUtils parametersUtils;
 
     public DynamicTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
+        this.parametersUtils = parametersUtils;
     }
+
 
     /**
      * This method maps a dynamic task to a {@link Task} based on the input params
@@ -69,7 +71,6 @@ public class DynamicTaskMapper implements TaskMapper {
         String taskName = getDynamicTaskName(taskInput, taskNameParam);
         taskToSchedule.setName(taskName);
         TaskDef taskDefinition = getDynamicTaskDefinition(taskToSchedule);
-        taskToSchedule.setTaskDefinition(taskDefinition);
 
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(), workflowInstance,
                 taskDefinition, taskMapperContext.getTaskId());
@@ -79,7 +80,7 @@ public class DynamicTaskMapper implements TaskMapper {
         dynamicTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         dynamicTask.setInputData(input);
         dynamicTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        dynamicTask.setWorkflowType(workflowInstance.getWorkflowName());
+        dynamicTask.setWorkflowType(workflowInstance.getWorkflowType());
         dynamicTask.setStatus(Task.Status.SCHEDULED);
         dynamicTask.setTaskType(taskToSchedule.getType());
         dynamicTask.setTaskDefName(taskToSchedule.getName());
@@ -91,8 +92,7 @@ public class DynamicTaskMapper implements TaskMapper {
         dynamicTask.setWorkflowTask(taskToSchedule);
         dynamicTask.setTaskType(taskName);
         dynamicTask.setRetriedTaskId(retriedTaskId);
-        dynamicTask.setWorkflowPriority(workflowInstance.getPriority());
-        return Collections.singletonList(dynamicTask);
+        return Arrays.asList(dynamicTask);
     }
 
     /**
@@ -101,8 +101,8 @@ public class DynamicTaskMapper implements TaskMapper {
      * @param taskInput:     a map which contains different input parameters and
      *                       also contains the mapping between the dynamic task name param and the actual name representing the dynamic task
      * @param taskNameParam: the key that is used to look up the dynamic task name.
-     * @return The name of the dynamic task
      * @throws TerminateWorkflowException : In case is there is no value dynamic task name in the input parameters.
+     * @return: The name of the dynamic task
      */
     @VisibleForTesting
     String getDynamicTaskName(Map<String, Object> taskInput, String taskNameParam) throws TerminateWorkflowException {
@@ -116,20 +116,19 @@ public class DynamicTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method gets the TaskDefinition for a specific {@link WorkflowTask}
+     * This method gets the TaskDefinition from the MetadataDao based on the {@link WorkflowTask#getName()}
      *
      * @param taskToSchedule: An instance of {@link WorkflowTask} which has the name of the using which the {@link TaskDef} can be retrieved.
-     * @return An instance of TaskDefinition
-     * @throws TerminateWorkflowException : in case of no workflow definition available
+     * @throws TerminateWorkflowException : in case of no work flow definition available in the {@link MetadataDAO}
+     * @return: An instance of TaskDefinition
      */
     @VisibleForTesting
     TaskDef getDynamicTaskDefinition(WorkflowTask taskToSchedule) throws TerminateWorkflowException { //TODO this is a common pattern in code base can be moved to DAO
-        return Optional.ofNullable(taskToSchedule.getTaskDefinition())
-                .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                        .orElseThrow(() -> {
-                            String reason = String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
-                                    taskToSchedule.getName());
-                            return new TerminateWorkflowException(reason);
-                        }));
+        return Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+                .orElseThrow(() -> {
+                    String reason = String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
+                            taskToSchedule.getName());
+                    return new TerminateWorkflowException(reason);
+                });
     }
 }

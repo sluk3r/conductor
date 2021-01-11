@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,92 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
 package com.netflix.conductor.common.metadata.workflow;
 
-import com.github.vmg.protogen.annotations.ProtoEnum;
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
-import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
-import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
-import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
-import com.netflix.conductor.common.metadata.Auditable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import javax.validation.Valid;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import java.util.Optional;
 
+import com.netflix.conductor.common.metadata.Auditable;
 
 /**
  * @author Viren
  *
  */
-@ProtoMessage
-@TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
 
-	@ProtoEnum
-	public enum TimeoutPolicy {TIME_OUT_WF, ALERT_ONLY}
-
-    @NotEmpty(message = "WorkflowDef name cannot be null or empty")
-    @ProtoField(id = 1)
-	@NoSemiColonConstraint(message = "Workflow name cannot contain the following set of characters: ':'")
 	private String name;
-
-	@ProtoField(id = 2)
+	
 	private String description;
-
-	@ProtoField(id = 3)
+	
 	private int version = 1;
-
-	@ProtoField(id = 4)
-    @NotNull
-    @NotEmpty(message = "WorkflowTask list cannot be empty")
-	private List<@Valid WorkflowTask> tasks = new LinkedList<>();
-
-	@ProtoField(id = 5)
-	private List<String> inputParameters = new LinkedList<>();
-
-	@ProtoField(id = 6)
+	
+	private LinkedList<WorkflowTask> tasks = new LinkedList<WorkflowTask>();
+	
+	private List<String> inputParameters = new LinkedList<String>();
+	
 	private Map<String, Object> outputParameters = new HashMap<>();
 
-	@ProtoField(id = 7)
 	private String failureWorkflow;
 
-	@ProtoField(id = 8)
-    @Min(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
-	@Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
-    private int schemaVersion = 2;
-
 	//By default a workflow is restartable
-	@ProtoField(id = 9)
 	private boolean restartable = true;
-
-	@ProtoField(id = 10)
-	private boolean workflowStatusListenerEnabled = false;
-
-	@ProtoField(id = 11)
-	@OwnerEmailMandatoryConstraint
-	@Email(message = "ownerEmail should be valid email address")
-	private String ownerEmail;
-
-	@ProtoField(id = 12)
-	private TimeoutPolicy timeoutPolicy = TimeoutPolicy.ALERT_ONLY;
-
-	@ProtoField(id = 13)
-	@NotNull
-	private long timeoutSeconds;
-
-	@ProtoField(id = 14)
-	private Map<String, Object> variables = new HashMap<>();
-
+	
+	private int schemaVersion = 1;
+	
 	/**
 	 * @return the name
 	 */
@@ -130,14 +83,14 @@ public class WorkflowDef extends Auditable {
 	/**
 	 * @return the tasks
 	 */
-	public List<WorkflowTask> getTasks() {
+	public LinkedList<WorkflowTask> getTasks() {
 		return tasks;
 	}
 
 	/**
 	 * @param tasks the tasks to set
 	 */
-	public void setTasks(List<@Valid WorkflowTask> tasks) {
+	public void setTasks(LinkedList<WorkflowTask> tasks) {
 		this.tasks = tasks;
 	}
 
@@ -155,19 +108,7 @@ public class WorkflowDef extends Auditable {
 		this.inputParameters = inputParameters;
 	}
 
-	/**
-	 * @return the global workflow variables
-	 */
-	public Map<String, Object> getVariables() {
-		return variables;
-	}
-	/**
-	 * @param vars the set of global workflow variables to set
-	 */
-	public void setVariables(Map<String, Object> vars) {
-		this.variables = vars;
-	}
-
+	
 	/**
 	 * @return the outputParameters
 	 */
@@ -181,7 +122,7 @@ public class WorkflowDef extends Auditable {
 	public void setOutputParameters(Map<String, Object> outputParameters) {
 		this.outputParameters = outputParameters;
 	}
-
+		
 	/**
 	 * @return the version
 	 */
@@ -189,6 +130,7 @@ public class WorkflowDef extends Auditable {
 		return version;
 	}
 
+	
 	/**
 	 * @return the failureWorkflow
 	 */
@@ -209,6 +151,7 @@ public class WorkflowDef extends Auditable {
 	public void setVersion(int version) {
 		this.version = version;
 	}
+
 
 	/**
 	 * This method determines if the workflow is restartable or not
@@ -244,68 +187,10 @@ public class WorkflowDef extends Auditable {
 		this.schemaVersion = schemaVersion;
 	}
 
-	/**
-	 *
-	 * @return true is workflow listener will be invoked when workflow gets into a terminal state
-	 */
-	public boolean isWorkflowStatusListenerEnabled() {
-		return workflowStatusListenerEnabled;
-	}
-
-	/**
-	 * Specify if workflow listener is enabled to invoke a callback for completed or terminated workflows
-	 * @param workflowStatusListenerEnabled
-	 */
-	public void setWorkflowStatusListenerEnabled(boolean workflowStatusListenerEnabled) {
-		this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
-	}
-
-	/**
-	 * @return the email of the owner of this workflow definition
-	 */
-	public String getOwnerEmail() {
-		return ownerEmail;
-	}
-
-	/**
-	 * @param ownerEmail the owner email to set
-	 */
-	public void setOwnerEmail(String ownerEmail) {
-		this.ownerEmail = ownerEmail;
-	}
-
-	/**
-	 * @return the timeoutPolicy
-	 */
-	public TimeoutPolicy getTimeoutPolicy() {
-		return timeoutPolicy;
-	}
-
-	/**
-	 * @param timeoutPolicy the timeoutPolicy to set
-	 */
-	public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
-		this.timeoutPolicy = timeoutPolicy;
-	}
-
-	/**
-	 * @return the time after which a workflow is deemed to have timed out
-	 */
-	public long getTimeoutSeconds() {
-		return timeoutSeconds;
-	}
-
-	/**
-	 * @param timeoutSeconds the timeout in seconds to set
-	 */
-	public void setTimeoutSeconds(long timeoutSeconds) {
-		this.timeoutSeconds = timeoutSeconds;
-	}
-
 	public String key(){
 		return getKey(name, version);
 	}
-
+	
 	public static String getKey(String name,  int version){
 		return name + "." + version;
 	}
@@ -314,19 +199,12 @@ public class WorkflowDef extends Auditable {
 		Iterator<WorkflowTask> it = tasks.iterator();
 		while(it.hasNext()){
 			 WorkflowTask task = it.next();
-			 if (task.getTaskReferenceName().equals(taskReferenceName)) {
-			 	// If taskReferenceName matches, break out
-			 	break;
-			 }
 			 WorkflowTask nextTask = task.next(taskReferenceName, null);
 			 if(nextTask != null){
 				 return nextTask;
-			 } else if (TaskType.DO_WHILE.name().equals(task.getType()) && !task.getTaskReferenceName().equals(taskReferenceName) && task.has(taskReferenceName)) {
-			 	// If the task is child of Loop Task and at last position, return null.
-			 	return null;
 			 }
-
-			 if(task.has(taskReferenceName)){
+			 
+			 if(task.getTaskReferenceName().equals(taskReferenceName) || task.has(taskReferenceName)){
 				 break;
 			 }
 		}
@@ -335,77 +213,22 @@ public class WorkflowDef extends Auditable {
 		}
 		return null;
 	}
-
+	
 	public WorkflowTask getTaskByRefName(String taskReferenceName){
-		return collectTasks().stream()
-				.filter(workflowTask -> workflowTask.getTaskReferenceName().equals(taskReferenceName))
-				.findFirst()
-				.orElse(null);
-	}
-
-	public List<WorkflowTask> collectTasks() {
-		List<WorkflowTask> tasks = new LinkedList<>();
-		for (WorkflowTask workflowTask : this.tasks) {
-			tasks.addAll(workflowTask.collectTasks());
+		Optional<WorkflowTask> found = all().stream()
+				.filter(wft -> wft.getTaskReferenceName().equals(taskReferenceName))
+				.findFirst();
+		if(found.isPresent()){
+			return found.get();
 		}
-		return tasks;
+		return null;
 	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
+	
+	public List<WorkflowTask> all(){
+		List<WorkflowTask> all = new LinkedList<>();
+		for(WorkflowTask wft : tasks){
+			all.addAll(wft.all());
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		WorkflowDef that = (WorkflowDef) o;
-		return getVersion() == that.getVersion() &&
-			getSchemaVersion() == that.getSchemaVersion() &&
-			Objects.equals(getName(), that.getName()) &&
-			Objects.equals(getDescription(), that.getDescription()) &&
-			Objects.equals(getTasks(), that.getTasks()) &&
-			Objects.equals(getInputParameters(), that.getInputParameters()) &&
-			Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
-			Objects.equals(getVariables(), that.getVariables()) &&
-			Objects.equals(getFailureWorkflow(), that.getFailureWorkflow()) &&
-			Objects.equals(getOwnerEmail(), that.getOwnerEmail()) &&
-			Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds());
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects
-			.hash(
-				getName(),
-				getDescription(),
-				getVersion(),
-				getTasks(),
-				getInputParameters(),
-				getOutputParameters(),
-				getVariables(),
-				getFailureWorkflow(),
-				getSchemaVersion(),
-				getOwnerEmail(),
-				getTimeoutSeconds()
-			);
-	}
-
-	@Override
-	public String toString() {
-		return "WorkflowDef{" +
-			"name='" + name + '\'' +
-			", description='" + description + '\'' +
-			", version=" + version +
-			", tasks=" + tasks +
-			", inputParameters=" + inputParameters +
-			", outputParameters=" + outputParameters +
-			", variables=" + variables +
-			", failureWorkflow='" + failureWorkflow + '\'' +
-			", schemaVersion=" + schemaVersion +
-			", restartable=" + restartable +
-			", workflowStatusListenerEnabled=" + workflowStatusListenerEnabled +
-			", timeoutSeconds=" + timeoutSeconds +
-			'}';
+		return all;
 	}
 }

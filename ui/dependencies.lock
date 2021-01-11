@@ -1,52 +1,42 @@
 {
-    "jacocoAgent": {
-        "org.jacoco:org.jacoco.agent": {
-            "locked": "0.8.1"
-        }
-    },
-    "jacocoAnt": {
-        "org.jacoco:org.jacoco.ant": {
-            "locked": "0.8.1"
-        }
-    },
     "testCompile": {
-        "junit:junit": {
-            "locked": "4.12",
-            "requested": "4.12"
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
         },
-        "org.mockito:mockito-core": {
-            "locked": "3.1.0",
-            "requested": "3.1.0"
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
         }
     },
     "testCompileClasspath": {
-        "junit:junit": {
-            "locked": "4.12",
-            "requested": "4.12"
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
         },
-        "org.mockito:mockito-core": {
-            "locked": "3.1.0",
-            "requested": "3.1.0"
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
         }
     },
     "testRuntime": {
-        "junit:junit": {
-            "locked": "4.12",
-            "requested": "4.12"
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
         },
-        "org.mockito:mockito-core": {
-            "locked": "3.1.0",
-            "requested": "3.1.0"
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
         }
     },
     "testRuntimeClasspath": {
-        "junit:junit": {
-            "locked": "4.12",
-            "requested": "4.12"
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
         },
-        "org.mockito:mockito-core": {
-            "locked": "3.1.0",
-            "requested": "3.1.0"
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
         }
     }
 }

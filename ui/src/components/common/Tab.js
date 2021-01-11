@@ -1,5 +1,15 @@
-import React from 'react';
+import React, {Component} from "react";
 
-const Tab = ({ children, active }) => <div className={'tab-pane' + (active ? ' active' : ' ')}>{children}</div>;
+export default class Tab extends Component {
+    constructor(props) {
+        super(props)
+    }
 
-export default Tab;
+    render() {
+        const {children, active} = this.props;
+
+        return <div className={"tab-pane" + ((active) ? " active" : " ")}>
+            {children}
+        </div>;
+    }
+}

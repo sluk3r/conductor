@@ -1,0 +1,72 @@
+{
+  "ownerApp": null,
+  "createTime": null,
+  "updateTime": 1531357937630,
+  "createdBy": null,
+  "updatedBy": null,
+  "name": "junit_test_wf",
+  "description": "junit_test_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "junit_task_1",
+      "taskReferenceName": "t1",
+      "description": null,
+      "inputParameters": {
+        "p1": "${workflow.input.param1}",
+        "p2": "${workflow.input.param2}"
+      },
+      "type": "SIMPLE",
+      "dynamicTaskNameParam": null,
+      "caseValueParam": null,
+      "caseExpression": null,
+      "decisionCases": {},
+      "dynamicForkJoinTasksParam": null,
+      "dynamicForkTasksParam": null,
+      "dynamicForkTasksInputParamName": null,
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "sink": null,
+      "optional": null,
+      "subWorkflowParam": null
+    },
+    {
+      "name": "junit_task_2",
+      "taskReferenceName": "t2",
+      "description": null,
+      "inputParameters": {
+        "tp1": "${workflow.input.param1}",
+        "tp2": "${t1.output.op}"
+      },
+      "type": "SIMPLE",
+      "dynamicTaskNameParam": null,
+      "caseValueParam": null,
+      "caseExpression": null,
+      "decisionCases": {},
+      "dynamicForkJoinTasksParam": null,
+      "dynamicForkTasksParam": null,
+      "dynamicForkTasksInputParamName": null,
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "sink": null,
+      "optional": null,
+      "subWorkflowParam": null
+    }
+  ],
+  "inputParameters": [
+    "param1",
+    "param2"
+  ],
+  "outputParameters": {
+    "o1": "${workflow.input.param1}",
+    "o2": "${t2.output.uuid}",
+    "o3": "${t1.output.op}"
+  },
+  "failureWorkflow": "$workflow.input.failureWfName",
+  "restartable": true,
+  "schemaVersion": 2
+}

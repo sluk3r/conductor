@@ -404,7 +404,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	exports.toString = toString;
 	// Sourced from lodash
-	// https://github.com/bestiejs/lodash/blob/master/LICENSE
+	// https://github.com/bestiejs/lodash/blob/master/LICENSE.txt
 	/* eslint-disable func-style */
 	var isFunction = function isFunction(value) {
 	  return typeof value === 'function';

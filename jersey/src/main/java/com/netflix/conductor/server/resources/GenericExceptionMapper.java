@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,26 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
 package com.netflix.conductor.server.resources;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.ApplicationException.Code;
-import com.netflix.conductor.metrics.Monitors;
-import com.sun.jersey.api.core.HttpContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.execution.ApplicationException.Code;
+import com.netflix.conductor.metrics.Monitors;
+import com.sun.jersey.api.core.HttpContext;
 
 /**
  * @author Viren
@@ -42,14 +47,13 @@ import java.util.Map;
 @Singleton
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GenericExceptionMapper.class);
-
+	private static Logger logger = LoggerFactory.getLogger(GenericExceptionMapper.class);
+	
+	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
+	
 	@Context 
     private HttpContext context;
-
-	@Context
-	private UriInfo uriInfo;
-
+	
 	private String host;
 	
 	@Inject
@@ -58,23 +62,24 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	}
 	
 	@Override
-	public Response toResponse(Throwable exception) {
-		LOGGER.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(), uriInfo.getPath()), exception);
-
+	public Response toResponse(Throwable t) {
+		logger.error(t.getMessage(), t);
 		Monitors.error("error", "error");
-
-		ApplicationException applicationException = null;
-
-        if (exception instanceof IllegalArgumentException || exception instanceof InvalidFormatException) {
-            applicationException = new ApplicationException(Code.INVALID_INPUT, exception.getMessage(), exception);
-        } else {
-            applicationException = new ApplicationException(Code.INTERNAL_ERROR, exception.getMessage(), exception);
-        }
+		ApplicationException e = new ApplicationException(Code.INTERNAL_ERROR, t.getMessage(), t);
+		MediaType mediaType = context.getRequest().selectVariant(supportedMediaTypes).getMediaType();
+		if(mediaType == null){
+			mediaType = MediaType.APPLICATION_JSON_TYPE;
+		}
 		
-		Map<String, Object> entityMap = applicationException.toMap();
+		Map<String, Object> entityMap = e.toMap();
 		entityMap.put("instance", host);
+		Object entity = entityMap;
+		if (MediaType.APPLICATION_JSON_TYPE != mediaType) {
+			entity = entity.toString();
+		}
 		
-		return Response.status(applicationException.getHttpStatusCode()).entity(entityMap).type(MediaType.APPLICATION_JSON_TYPE).build();
+		return Response.status(e.getHttpStatusCode()).entity(entity).type(mediaType).build();
+		
 	}
 	
 }

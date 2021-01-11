@@ -15,12 +15,14 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class EventTaskMapperTest {
+
+
 
     @Test
     public void getMappedTasks() throws Exception {
@@ -36,18 +38,7 @@ public class EventTaskMapperTest {
 
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString())).thenReturn(eventTaskInput);
 
-        WorkflowDef  wd = new WorkflowDef();
-        Workflow w = new Workflow();
-        w.setWorkflowDefinition(wd);
-
-        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(wd)
-                .withWorkflowInstance(w)
-                .withTaskDefinition(new TaskDef())
-                .withTaskToSchedule(taskToBeScheduled)
-                .withRetryCount(0)
-                .withTaskId(taskId)
-                .build();
+        TaskMapperContext taskMapperContext = new TaskMapperContext(new WorkflowDef(), new Workflow(), taskToBeScheduled, null, 0, null, taskId, null);
 
         List<Task> mappedTasks = eventTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());

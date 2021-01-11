@@ -18,8 +18,6 @@
  */
 package com.netflix.conductor.core.events.queue;
 
-import java.util.Objects;
-
 /**
  * @author Viren
  *
@@ -31,8 +29,6 @@ public class Message {
 	private String id;
 	
 	private String receipt;
-
-	private int priority;
 	
 	public Message() {
 		
@@ -42,13 +38,6 @@ public class Message {
 		this.payload = payload;
 		this.id = id;
 		this.receipt = receipt;
-	}
-
-	public Message(String id, String payload, String receipt, int priority) {
-		this.payload = payload;
-		this.id = id;
-		this.receipt = receipt;
-		this.priority = priority;
 	}
 
 	/**
@@ -95,43 +84,9 @@ public class Message {
 		this.receipt = receipt;
 	}
 
-	/**
-	 * Gets the message priority
-	 * @return priority of message.
-	 */
-	public int getPriority() {
-		return priority;
-	}
-
-	/**
-	 * Sets the message priority (between 0 and 99).
-	 * Higher priority message is retrieved ahead of lower priority ones.
-	 *
-	 * @param priority the priority of message (between 0 and 99)
-	 */
-	public void setPriority(int priority) {
-		this.priority = priority;
-	}
-
 	@Override
 	public String toString() {
 		return id;
 	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		Message message = (Message) o;
-		return Objects.equals(payload, message.payload) &&
-				Objects.equals(id, message.id) &&
-				Objects.equals(priority, message.priority) &&
-				Objects.equals(receipt, message.receipt);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(payload, id, receipt, priority);
-	}
-
+	
 }

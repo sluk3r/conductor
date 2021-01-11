@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 /**
- *
+ * 
  */
 package com.netflix.conductor.contribs.queue.sqs;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -58,15 +54,13 @@ import com.netflix.conductor.service.ExecutionService;
 public class TestQueueManager {
 
 	private static SQSObservableQueue queue;
-
+	
 	private static ExecutionService es;
-
-	private ObjectMapper objectMapper = new JsonMapperProvider().get();
-
+	
 	private static final List<Message> messages = new LinkedList<>();
-
+	
 	private static final List<Task> updatedTasks = new LinkedList<>();
-
+	
 	@BeforeClass
 	public static void setup() throws Exception {
 
@@ -82,89 +76,78 @@ public class TestQueueManager {
 				return copy;
 			}
 		};
-
+		
 		when(queue.receiveMessages()).thenAnswer(answer);
 		when(queue.getOnSubscribe()).thenCallRealMethod();
 		when(queue.observe()).thenCallRealMethod();
 		when(queue.getName()).thenReturn(Status.COMPLETED.name());
-
-		Task task0 = new Task();
-		task0.setStatus(Status.IN_PROGRESS);
-		task0.setTaskId("t0");
-		task0.setReferenceTaskName("t0");
-		task0.setTaskType(Wait.NAME);
-		Workflow workflow0 = new Workflow();
-		workflow0.setWorkflowId("v_0");
-		workflow0.getTasks().add(task0);
-
-		Task task2 = new Task();
-		task2.setStatus(Status.IN_PROGRESS);
-		task2.setTaskId("t2");
-		task2.setTaskType(Wait.NAME);
-		Workflow workflow2 = new Workflow();
-		workflow2.setWorkflowId("v_2");
-		workflow2.getTasks().add(task2);
-
+		
 		doAnswer(new Answer<Void>() {
 
 			@SuppressWarnings("unchecked")
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
-				List<Message> msgs = invocation.getArgument(0, List.class);
+				List<Message> msgs = invocation.getArgumentAt(0, List.class);
 				System.out.println("got messages to publish: " + msgs);
 				messages.addAll(msgs);
 				return null;
 			}
 		}).when(queue).publish(any());
-
+		
 		es = mock(ExecutionService.class);
 		assertNotNull(es);
+		doAnswer(new Answer<Workflow>() {
 
-		doReturn(workflow0).when(es).getExecutionStatus(eq("v_0"), anyBoolean());
-
-		doReturn(workflow2).when(es).getExecutionStatus(eq("v_2"), anyBoolean());
-
+			@Override
+			public Workflow answer(InvocationOnMock invocation) throws Throwable {
+				try {
+					String workflowId = invocation.getArgumentAt(0, String.class);
+					Workflow workflow = new Workflow();
+					workflow.setWorkflowId(workflowId);
+					Task task = new Task();
+					task.setStatus(Status.IN_PROGRESS);
+					task.setReferenceTaskName("t0");
+					task.setTaskType(Wait.NAME);
+					workflow.getTasks().add(task);
+					return workflow;
+				} catch(Throwable t) {
+					t.printStackTrace();
+					throw t;
+				}
+			}
+		}).when(es).getExecutionStatus(any(), anyBoolean());
+		
 		doAnswer(new Answer<Void>() {
 
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
-				System.out.println("Updating task: " + invocation.getArgument(0, Task.class));
-				updatedTasks.add(invocation.getArgument(0, Task.class));
+				System.out.println("Updating task: " + invocation.getArgumentAt(0, Task.class));
+				updatedTasks.add(invocation.getArgumentAt(0, Task.class));
 				return null;
 			}
 		}).when(es).updateTask(any(Task.class));
 
 	}
-
-
+	
+	
+	
 	@Test
 	public void test() throws Exception {
 		Map<Status, ObservableQueue> queues = new HashMap<>();
 		queues.put(Status.COMPLETED, queue);
-		QueueManager qm = new QueueManager(queues, es, objectMapper);
-		qm.updateByTaskRefName("v_0", "t0", new HashMap<>(), Status.COMPLETED);
+		QueueManager qm = new QueueManager(queues, es);
+		qm.update("v_0", "t0", new HashMap<>(), Status.COMPLETED);
 		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
-
-		assertTrue(updatedTasks.stream().anyMatch(task -> task.getTaskId().equals("t0")));
+		assertEquals("updatedTasks are: " + updatedTasks.toString(), 1, updatedTasks.size());
 	}
-
+	
 	@Test(expected=IllegalArgumentException.class)
 	public void testFailure() throws Exception {
 		Map<Status, ObservableQueue> queues = new HashMap<>();
 		queues.put(Status.COMPLETED, queue);
-		QueueManager qm = new QueueManager(queues, es, objectMapper);
-		qm.updateByTaskRefName("v_1", "t1", new HashMap<>(), Status.CANCELED);
+		QueueManager qm = new QueueManager(queues, es);
+		qm.update("v_1", "t1", new HashMap<>(), Status.CANCELED);
 		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
-	}
-
-	@Test
-	public void testWithTaskId() throws Exception {
-		Map<Status, ObservableQueue> queues = new HashMap<>();
-		queues.put(Status.COMPLETED, queue);
-		QueueManager qm = new QueueManager(queues, es, objectMapper);
-		qm.updateByTaskId("v_2", "t2", new HashMap<>(), Status.COMPLETED);
-		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
-
-		assertTrue(updatedTasks.stream().anyMatch(task -> task.getTaskId().equals("t2")));
+		assertEquals(1, updatedTasks.size());
 	}
 }

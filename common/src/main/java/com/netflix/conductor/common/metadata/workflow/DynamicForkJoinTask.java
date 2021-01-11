@@ -18,25 +18,15 @@ package com.netflix.conductor.common.metadata.workflow;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.github.vmg.protogen.annotations.*;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 
-@ProtoMessage
 public class DynamicForkJoinTask {
 
-    @ProtoField(id = 1)
     private String taskName;
-
-    @ProtoField(id = 2)
     private String workflowName;
-
-    @ProtoField(id = 3)
     private String referenceName;
-
-    @ProtoField(id = 4)
     private Map<String, Object> input = new HashMap<>();
-
-    @ProtoField(id = 5)
-    private String type = TaskType.SIMPLE.name();
+    private String type = Type.SIMPLE.name();
 
     public DynamicForkJoinTask() {
     }

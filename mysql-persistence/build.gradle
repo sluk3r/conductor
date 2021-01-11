@@ -1,58 +1,19 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath "com.avast.gradle:gradle-docker-compose-plugin:${revDockerCompose}"
-    }
-}
-
-apply plugin: 'docker-compose'
-
 dependencies {
-    compile project(':conductor-core')
-    compile "com.google.inject:guice:${revGuice}"
+	compile project(':conductor-core')
+	compile "com.google.inject:guice:${revGuice}"
 
-    compile "commons-io:commons-io:${revCommonsIo}"
-    compile "mysql:mysql-connector-java:${revMySqlConnector}"
-    compile "com.zaxxer:HikariCP:${revHikariCP}"
-    compile "org.flywaydb:flyway-core:${revFlywayCore}"
+	compile "commons-io:commons-io:${revCommonsIo}"
+	compile "mysql:mysql-connector-java:${revMySqlConnector}"
+	compile "com.zaxxer:HikariCP:${revHikariCP}"
+	compile "org.flywaydb:flyway-core:${revFlywayCore}"
 
-    testCompile project(':conductor-core').sourceSets.test.output
-    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
-    testCompile "org.testinfected.hamcrest-matchers:all-matchers:${revHamcrestAllMatchers}"
+	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
+	//TODO Change the below deps to use the same version as one in versionsOfDependencies.gradle
+	testCompile 'ch.qos.logback:logback-core:1.2.3'
+	testCompile 'ch.qos.logback:logback-classic:1.2.3'
 }
-
-dockerCompose{
-    integrationTestDocker{
-        useComposeFiles = ["./docker-compose.yml"]
-        startedServices = ["mysqldb"]
-        waitForTcpPorts = true
-        isRequiredBy(tasks.test)
-        projectName = project.name
-    }
-}
-
-task intDockerStart() {
-    group = "Mysql data access based Integration Test"
-    description "Starts a local db container for mysql data access integration tests."
-    dependsOn integrationTestDockerComposeDownForced
-    dependsOn integrationTestDockerComposeUp
-}
-
-task intDockerDown(dependsOn: integrationTestDockerComposeDownForced) {
-    group = "Mysql data access based Integration Test"
-    description "Stops a local db container for mysql data access integration tests."
-}
-
-test.doFirst {
-    dockerCompose.exposeAsSystemProperties(test)
-}
-
-test.finalizedBy("intDockerDown")
 
 test {
-    //the MySQL unit tests must run within the same JVM to share the same embedded DB
-    maxParallelForks = 1
+	//the MySQL unit tests must run within the same JVM to share the same embedded DB
+	maxParallelForks = 1
 }

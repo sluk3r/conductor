@@ -1,57 +1,44 @@
 package com.netflix.conductor.dao.mysql;
 
-import com.google.common.collect.ImmutableList;
-import com.netflix.conductor.core.events.queue.Message;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
+import com.netflix.conductor.core.events.queue.Message;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @SuppressWarnings("Duplicates")
-public class MySQLQueueDAOTest {
+public class MySQLQueueDAOTest extends MySQLBaseDAOTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MySQLQueueDAOTest.class);
 
-	private MySQLDAOTestUtil testUtil;
 	private MySQLQueueDAO dao;
-
-    @Rule
-    public TestName name = new TestName();
-
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
 
 	@Before
 	public void setup() throws Exception {
-        testUtil = new MySQLDAOTestUtil(name.getMethodName());
-		dao = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
+		dao = new MySQLQueueDAO(objectMapper, dataSource);
+		resetAllData();
 	}
 
-	@After
-    public void teardown() throws Exception {
-        testUtil.resetAllData();
-        testUtil.getDataSource().close();
-    }
+	@Rule
+	public ExpectedException expected = ExpectedException.none();
 
 	@Test
-	public void complexQueueTest() {
+	public void test() {
 		String queueName = "TestQueue";
 		long offsetTimeInSecond = 0;
 
@@ -104,7 +91,6 @@ public class MySQLQueueDAOTest {
 
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
-			assertTrue(dao.containsMessage(queueName, messageId));
 			dao.remove(queueName, messageId);
 		}
 
@@ -121,33 +107,6 @@ public class MySQLQueueDAOTest {
 	}
 
 	/**
-	 * Test fix for https://github.com/Netflix/conductor/issues/1892
-	 *
-	 * */
-	@Test
-	public void containsMessageTest() {
-		String queueName = "TestQueue";
-		long offsetTimeInSecond = 0;
-
-		for(int i = 0; i < 10; i++) {
-			String messageId = "msg" + i;
-			dao.push(queueName, messageId, offsetTimeInSecond);
-		}
-		int size = dao.getSize(queueName);
-		assertEquals(10, size);
-
-		for(int i = 0; i < 10; i++) {
-			String messageId = "msg" + i;
-			assertTrue(dao.containsMessage(queueName, messageId));
-			dao.remove(queueName, messageId);
-		}
-		for(int i = 0; i < 10; i++) {
-			String messageId = "msg" + i;
-			assertFalse(dao.containsMessage(queueName, messageId));
-		}
-	}
-
-	/**
 	 * Test fix for https://github.com/Netflix/conductor/issues/399
 	 * @since 1.8.2-rc5
 	 */
@@ -159,12 +118,7 @@ public class MySQLQueueDAOTest {
 
 		for(int i = 0; i < totalSize; i++) {
 			String payload = "{\"id\": " + i + ", \"msg\":\"test " + i + "\"}";
-			Message m = new Message("testmsg-" + i, payload, "");
-			if (i % 2 == 0) {
-				// Set priority on message with pair id
-				m.setPriority(99-i);
-			}
-			messages.add(m);
+			messages.add(new Message("testmsg-" + i, payload, ""));
 		}
 
 		// Populate the queue with our test message batch
@@ -191,9 +145,9 @@ public class MySQLQueueDAOTest {
 
 		// Assert that our un-popped messages match our expected size
 		final long expectedSize = totalSize - firstPollSize - secondPollSize;
-		try(Connection c = testUtil.getDataSource().getConnection()) {
+		try(Connection c = dataSource.getConnection()) {
 			String UNPOPPED = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
-			try(Query q = new Query(testUtil.getObjectMapper(), c, UNPOPPED)) {
+			try(Query q = new Query(objectMapper, c, UNPOPPED)) {
 				long count = q.addParameter(queueName).executeCount();
 				assertEquals("Remaining queue size mismatch", expectedSize, count);
 			}
@@ -270,9 +224,9 @@ public class MySQLQueueDAOTest {
 
 		// Assert that our un-popped messages match our expected size
 		final long expectedSize = totalSize - firstPollSize - secondPollSize;
-		try(Connection c = testUtil.getDataSource().getConnection()) {
+		try(Connection c = dataSource.getConnection()) {
 			String UNPOPPED = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
-			try(Query q = new Query(testUtil.getObjectMapper(), c, UNPOPPED)) {
+			try(Query q = new Query(objectMapper, c, UNPOPPED)) {
 				long count = q.addParameter(queueName).executeCount();
 				assertEquals("Remaining queue size mismatch", expectedSize, count);
 			}
@@ -329,14 +283,14 @@ public class MySQLQueueDAOTest {
 		Map<String, Map<String, Map<String, Long>>> details = dao.queuesDetailVerbose();
 		uacked = details.get(queueName).get("a").get("uacked");
 		assertNotNull(uacked);
-		assertEquals("The messages that were polled should be unacked still", uacked.longValue(), unackedCount - 1);
+		assertEquals("There should be no unacked messages", uacked.longValue(), 0);
 
 		Long otherUacked = details.get(otherQueueName).get("a").get("uacked");
 		assertNotNull(otherUacked);
-		assertEquals("Other queue should have all unacked messages", otherUacked.longValue(), count);
+		assertEquals("Other queue should have unacked messages", otherUacked.longValue(), count);
 
 		Long size = dao.queuesDetail().get(queueName);
 		assertNotNull(size);
-		assertEquals(size.longValue(), count - unackedCount);
+		assertEquals(size.longValue(), count - 1);
 	}
 }

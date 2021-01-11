@@ -18,14 +18,13 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 
 /**
  * @author Viren
@@ -48,8 +47,9 @@ public class WorkflowSystemTask {
 	 * @param workflow Workflow for which the task is being started
 	 * @param task Instance of the Task
 	 * @param executor Workflow Executor
+	 * @throws Exception If there is an error when starting the task
 	 */
-	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
+	public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
 		//Do nothing unless overridden by the task implementation
 	}
 	
@@ -59,8 +59,9 @@ public class WorkflowSystemTask {
 	 * @param task Instance of the Task
 	 * @param executor Workflow Executor
 	 * @return true, if the execution has changed the task status.  return false otherwise.
+	 * @throws Exception If there is an error when starting the task
 	 */
-	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
+	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
 		return false;
 	}
 	
@@ -69,8 +70,9 @@ public class WorkflowSystemTask {
 	 * @param workflow Workflow for which the task is being started
 	 * @param task Instance of the Task
 	 * @param executor Workflow Executor
+	 * @throws Exception If there is an error when starting the task
 	 */
-	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
+	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
 	}
 	
 	/**
@@ -79,22 +81,6 @@ public class WorkflowSystemTask {
 	 */
 	public boolean isAsync() {
 		return false;
-	}
-
-	/**
-	 *
-	 * @return True to keep task in 'IN_PROGRESS' state, and 'COMPLETE' later by an external message.
-	 */
-	public boolean isAsyncComplete(Task task) {
-		if (task.getInputData().containsKey("asyncComplete")) {
-			return Optional.ofNullable(task.getInputData().get("asyncComplete"))
-				.map(result -> (Boolean) result)
-				.orElse(false);
-		} else {
-			return Optional.ofNullable(task.getWorkflowTask())
-				.map(WorkflowTask::isAsyncComplete)
-				.orElse(false);
-		}
 	}
 	
 	/**

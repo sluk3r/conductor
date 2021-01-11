@@ -14,64 +14,65 @@
  * limitations under the License.
  */
 /**
- *
+ * 
  */
 package com.netflix.conductor.core.events;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.core.execution.ParametersUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Singleton;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.execution.ParametersUtils;
+
 /**
  * @author Viren
- * Holders for internal event queues
+ * Static holders for internal event queues
  */
-@Singleton
 public class EventQueues {
-	public static final String EVENT_QUEUE_PROVIDERS_QUALIFIER = "EventQueueProviders";
+	
+	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
 
-	private static final Logger logger = LoggerFactory.getLogger(EventQueues.class);
-
-	private final ParametersUtils parametersUtils;
-
-	private final Map<String, EventQueueProvider> providers;
+	private static ParametersUtils parametersUtils = new ParametersUtils();
 
 	@Inject
-	public EventQueues(@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER) Map<String, EventQueueProvider> providers, ParametersUtils parametersUtils) {
-	    this.providers = providers;
-	    this.parametersUtils = parametersUtils;
+	@Named("EventQueueProviders")
+	public static Map<String, EventQueueProvider> providers; //TODO this is a leaky abstraction, when the static injection is moved to singleton this will be fixed
+
+	private EventQueues() {
+
 	}
 
-	public List<String> getProviders() {
+	public static List<String> providers() {
 		return providers.values().stream()
 				.map(p -> p.getClass().getName())
 				.collect(Collectors.toList());
 	}
 
-	public ObservableQueue getQueue(String eventType) {
-		String event = parametersUtils.replace(eventType).toString();
-		int index = event.indexOf(':');
-		if (index == -1) {
-			logger.error("Queue cannot be configured for illegal event: {}", event);
-			throw new IllegalArgumentException("Illegal event " + event);
-		}
-
-		String type = event.substring(0, index);
-		String queueURI = event.substring(index + 1);
+	public static ObservableQueue getQueue(String eventt, boolean throwException) {
+		String event = parametersUtils.replace(eventt).toString();
+		String type = event.substring(0, event.indexOf(':'));
+		String queueURI = event.substring(event.indexOf(':') + 1);
 		EventQueueProvider provider = providers.get(type);
 		if (provider != null) {
-			return provider.getQueue(queueURI);
+			try {
+				return provider.getQueue(queueURI);
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+				if (throwException) {
+					throw e;
+				}
+			}
 		} else {
-			logger.error("Queue {} is not configured for event:{}", type, eventType);
 			throw new IllegalArgumentException("Unknown queue type " + type);
 		}
+		return null;
+
 	}
 }

@@ -18,16 +18,17 @@
  */
 package com.netflix.conductor.core.events.queue.dyno;
 
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.dao.QueueDAO;
-import rx.Scheduler;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.EventQueues;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.dao.QueueDAO;
 
 /**
  * @author Viren
@@ -36,20 +37,24 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 public class DynoEventQueueProvider implements EventQueueProvider {
 
-	private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
-	private final QueueDAO queueDAO;
-	private final Configuration config;
-	private final  Scheduler scheduler;
+	private Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
+	
+	private QueueDAO dao;
+	
+	private Configuration config;
 	
 	@Inject
-	public DynoEventQueueProvider(QueueDAO queueDAO, Configuration config, Scheduler scheduler) {
-		this.queueDAO = queueDAO;
+	public DynoEventQueueProvider(QueueDAO dao, Configuration config) {
+		this.dao = dao;
 		this.config = config;
-		this.scheduler = scheduler;
 	}
 	
 	@Override
 	public ObservableQueue getQueue(String queueURI) {
-		return queues.computeIfAbsent(queueURI, q -> new DynoObservableQueue(queueURI, queueDAO, config, scheduler));
+		return queues.computeIfAbsent(queueURI, q -> {
+			DynoObservableQueue queue = new DynoObservableQueue(queueURI, dao, config);
+			return queue;
+		});
 	}
+
 }

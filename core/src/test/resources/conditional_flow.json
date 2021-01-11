@@ -31,51 +31,13 @@
                                         "p2": "workflow.input.param2"
                                     },
                                     "type": "SIMPLE",
-                                    "startDelay": 0,
-                                    "taskDefinition": {
-                                        "ownerApp": null,
-                                        "createTime": null,
-                                        "updateTime": null,
-                                        "createdBy": null,
-                                        "updatedBy": null,
-                                        "name": "junit_task_1",
-                                        "description": "junit_task_1",
-                                        "retryCount": 1,
-                                        "timeoutSeconds": 0,
-                                        "inputKeys": [],
-                                        "outputKeys": [],
-                                        "timeoutPolicy": "TIME_OUT_WF",
-                                        "retryLogic": "FIXED",
-                                        "retryDelaySeconds": 60,
-                                        "responseTimeoutSeconds": 3600,
-                                        "concurrentExecLimit": null,
-                                        "inputTemplate": {}
-                                    }
+                                    "startDelay": 0
                                 },
                                 {
                                     "name": "junit_task_3",
                                     "taskReferenceName": "t3",
                                     "type": "SIMPLE",
-                                    "startDelay": 0,
-                                    "taskDefinition": {
-                                        "ownerApp": null,
-                                        "createTime": null,
-                                        "updateTime": null,
-                                        "createdBy": null,
-                                        "updatedBy": null,
-                                        "name": "junit_task_3",
-                                        "description": "junit_task_3",
-                                        "retryCount": 1,
-                                        "timeoutSeconds": 0,
-                                        "inputKeys": [],
-                                        "outputKeys": [],
-                                        "timeoutPolicy": "TIME_OUT_WF",
-                                        "retryLogic": "FIXED",
-                                        "retryDelaySeconds": 60,
-                                        "responseTimeoutSeconds": 3600,
-                                        "concurrentExecLimit": null,
-                                        "inputTemplate": {}
-                                    }
+                                    "startDelay": 0
                                 }
                             ],
                             "two": [
@@ -87,26 +49,7 @@
                                         "tp3": "workflow.input.param2"
                                     },
                                     "type": "SIMPLE",
-                                    "startDelay": 0,
-                                    "taskDefinition": {
-                                        "ownerApp": null,
-                                        "createTime": null,
-                                        "updateTime": null,
-                                        "createdBy": null,
-                                        "updatedBy": null,
-                                        "name": "junit_task_2",
-                                        "description": "junit_task_2",
-                                        "retryCount": 1,
-                                        "timeoutSeconds": 0,
-                                        "inputKeys": [],
-                                        "outputKeys": [],
-                                        "timeoutPolicy": "TIME_OUT_WF",
-                                        "retryLogic": "FIXED",
-                                        "retryDelaySeconds": 60,
-                                        "responseTimeoutSeconds": 3600,
-                                        "concurrentExecLimit": null,
-                                        "inputTemplate": {}
-                                    }
+                                    "startDelay": 0
                                 }
                             ]
                         },
@@ -118,26 +61,7 @@
                         "name": "junit_task_3",
                         "taskReferenceName": "t3",
                         "type": "SIMPLE",
-                        "startDelay": 0,
-                        "taskDefinition": {
-                            "ownerApp": null,
-                            "createTime": null,
-                            "updateTime": null,
-                            "createdBy": null,
-                            "updatedBy": null,
-                            "name": "junit_task_3",
-                            "description": "junit_task_3",
-                            "retryCount": 1,
-                            "timeoutSeconds": 0,
-                            "inputKeys": [],
-                            "outputKeys": [],
-                            "timeoutPolicy": "TIME_OUT_WF",
-                            "retryLogic": "FIXED",
-                            "retryDelaySeconds": 60,
-                            "responseTimeoutSeconds": 3600,
-                            "concurrentExecLimit": null,
-                            "inputTemplate": {}
-                        }
+                        "startDelay": 0
                     }
                 ]
             },
@@ -150,26 +74,7 @@
                         "tp3": "workflow.input.param2"
                     },
                     "type": "SIMPLE",
-                    "startDelay": 0,
-                    "taskDefinition": {
-                        "ownerApp": null,
-                        "createTime": null,
-                        "updateTime": null,
-                        "createdBy": null,
-                        "updatedBy": null,
-                        "name": "junit_task_2",
-                        "description": "junit_task_2",
-                        "retryCount": 1,
-                        "timeoutSeconds": 0,
-                        "inputKeys": [],
-                        "outputKeys": [],
-                        "timeoutPolicy": "TIME_OUT_WF",
-                        "retryLogic": "FIXED",
-                        "retryDelaySeconds": 60,
-                        "responseTimeoutSeconds": 3600,
-                        "concurrentExecLimit": null,
-                        "inputTemplate": {}
-                    }
+                    "startDelay": 0
                 }
             ],
             "startDelay": 0
@@ -188,26 +93,7 @@
                         "name": "junit_task_4",
                         "taskReferenceName": "junit_task_4",
                         "type": "SIMPLE",
-                        "startDelay": 0,
-                        "taskDefinition": {
-                            "ownerApp": null,
-                            "createTime": null,
-                            "updateTime": null,
-                            "createdBy": null,
-                            "updatedBy": null,
-                            "name": "junit_task_4",
-                            "description": "junit_task_4",
-                            "retryCount": 1,
-                            "timeoutSeconds": 0,
-                            "inputKeys": [],
-                            "outputKeys": [],
-                            "timeoutPolicy": "TIME_OUT_WF",
-                            "retryLogic": "FIXED",
-                            "retryDelaySeconds": 60,
-                            "responseTimeoutSeconds": 3600,
-                            "concurrentExecLimit": null,
-                            "inputTemplate": {}
-                        }
+                        "startDelay": 0
                     }
                 ]
             },

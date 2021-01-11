@@ -9,15 +9,15 @@ At the minimum, provide these options through VM or Config file:
 
 `workflow.elasticsearch.url`
 `workflow.elasticsearch.index.name`
+`workflow.elasticsearch.version` (Defaults to 2.X; Provided implementations for major versions 2.X and 5.X)
 
-### Database persistence model
-Possible values are memory, redis, redis_cluster, redis_sentinel and dynomite.
+### Database persistence model  
+Possible values are memory, redis, redis_cluster and dynomite.
 If omitted, the persistence used is memory
 
 memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 redis : non-Dynomite based redis instance
 redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
-redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
 dynomite : Dynomite cluster.  Use this for HA configuration.
 `db=dynomite`
 
@@ -25,10 +25,6 @@ dynomite : Dynomite cluster.  Use this for HA configuration.
 format is host:port:rack separated by semicolon
 for AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. The region in this case does not matter
 `workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e`
-
-#### Redis authentication
-An optional 4th colon-delimited field can be appended to the cluster definition to specify the password for Redis authentication.
-`workflow.dynomite.cluster.hosts=host1:8102:us-east-1c:password`
 
 ### Dynomite cluster name
 `workflow.dynomite.cluster.name=dyno_cluster_name`
@@ -53,10 +49,4 @@ For Dynomite, this is 22122 by default or the local redis-server port used by Dy
 ### Additional modules (optional)
 `conductor.additional.modules=class_extending_com.google.inject.AbstractModule`
 
-### Using asynchronous indexing
-`async.indexing.enabled=true`
-
-Configure the below properties to appropriate values to delay workflow document updates in the index upon completion for workflows that complete in short duration
-`async.update.short.workflow.duration.seconds=30`
-`async.update.delay.seconds=60`
 

@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
 import io.nats.client.Subscription;
-import rx.Scheduler;
 
 /**
  * @author Oleksiy Lysak
@@ -36,8 +35,8 @@ public class NATSObservableQueue extends NATSAbstractQueue {
     private Subscription subs;
     private Connection conn;
     
-    public NATSObservableQueue(ConnectionFactory factory, String queueURI, Scheduler scheduler) {
-        super(queueURI, "nats", scheduler);
+    public NATSObservableQueue(ConnectionFactory factory, String queueURI) {
+        super(queueURI, "nats");
         this.fact = factory;
         open();
     }

@@ -1,28 +1,26 @@
 package com.netflix.conductor.dao.mysql;
 
 
+import static com.netflix.conductor.core.execution.ApplicationException.Code;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.sql.ResultSetHandler;
-
-import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.sql.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.netflix.conductor.core.execution.ApplicationException.Code;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents a {@link PreparedStatement} that is wrapped with convenience methods and utilities.
@@ -237,7 +235,7 @@ public class Query implements AutoCloseable {
     public boolean executeDelete() {
         int count = executeUpdate();
         if (count > 1) {
-            logger.trace("Removed {} row(s) for query {}", count, rawQuery);
+            logger.debug("Removed {} row(s) for query {}", count, rawQuery);
         }
 
         return count > 0;
@@ -273,7 +271,7 @@ public class Query implements AutoCloseable {
 
             return val;
         } catch (SQLException ex) {
-            throw new ApplicationException(Code.BACKEND_ERROR, ex.getMessage(), ex);
+            throw new ApplicationException(Code.BACKEND_ERROR, ex.getMessage());
         }
     }
 

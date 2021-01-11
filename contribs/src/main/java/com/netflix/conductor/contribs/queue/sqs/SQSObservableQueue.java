@@ -50,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
-import rx.Scheduler;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,7 +72,7 @@ public class SQSObservableQueue implements ObservableQueue {
 
 	private String queueName;
 
-	private int visibilityTimeoutInSeconds;
+	private int visibilityTimeout;
 
 	private int batchSize;
 
@@ -83,22 +82,13 @@ public class SQSObservableQueue implements ObservableQueue {
 
 	private String queueURL;
 
-	private final Scheduler scheduler;
-
-	private SQSObservableQueue(String queueName,
-							   AmazonSQSClient client,
-							   int visibilityTimeoutInSeconds,
-							   int batchSize,
-							   int pollTimeInMS,
-							   List<String> accountsToAuthorize,
-							   Scheduler scheduler) {
+	private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeout, int batchSize, int pollTimeInMS, List<String> accountsToAuthorize) {
 		this.queueName = queueName;
 		this.client = client;
-		this.visibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
+		this.visibilityTimeout = visibilityTimeout;
 		this.batchSize = batchSize;
 		this.pollTimeInMS = pollTimeInMS;
 		this.queueURL = getOrCreateQueue();
-		this.scheduler = scheduler;
 		addPolicy(accountsToAuthorize);
 	}
 
@@ -151,18 +141,6 @@ public class SQSObservableQueue implements ObservableQueue {
 		return queueURL;
 	}
 
-	public int getPollTimeInMS() {
-		return pollTimeInMS;
-	}
-
-	public int getBatchSize() {
-		return batchSize;
-	}
-
-	public int getVisibilityTimeoutInSeconds() {
-		return visibilityTimeoutInSeconds;
-	}
-
 	public static class Builder {
 
 		private String queueName;
@@ -176,8 +154,6 @@ public class SQSObservableQueue implements ObservableQueue {
 		private AmazonSQSClient client;
 
 		private List<String> accountsToAuthorize = new LinkedList<>();
-
-		private Scheduler scheduler;
 
 		public Builder withQueueName(String queueName) {
 			this.queueName = queueName;
@@ -219,13 +195,8 @@ public class SQSObservableQueue implements ObservableQueue {
 			return this;
 		}
 
-		public Builder withScheduler(Scheduler scheduler) {
-			this.scheduler = scheduler;
-			return this;
-		}
-
 		public SQSObservableQueue build() {
-			return new SQSObservableQueue(queueName, client, visibilityTimeout, batchSize, pollTimeInMS, accountsToAuthorize, scheduler);
+			return new SQSObservableQueue(queueName, client, visibilityTimeout, batchSize, pollTimeInMS, accountsToAuthorize);
 		}
 	}
 
@@ -242,7 +213,7 @@ public class SQSObservableQueue implements ObservableQueue {
         }
     }
 
-	private String getQueueARN() {
+	String getQueueARN() {
 		GetQueueAttributesResult response = client.getQueueAttributes(queueURL, Collections.singletonList("QueueArn"));
 		return response.getAttributes().get("QueueArn");
 	}
@@ -283,16 +254,16 @@ public class SQSObservableQueue implements ObservableQueue {
 				.collect(Collectors.toList());
     }
 
-	private void publishMessages(List<Message> messages) {
-		logger.debug("Sending {} messages to the SQS queue: {}", messages.size(), queueName);
+	void publishMessages(List<Message> messages) {
+		logger.info("Sending {} messages", messages.size());
 		SendMessageBatchRequest batch = new SendMessageBatchRequest(queueURL);
 		messages.forEach(msg -> {
 			SendMessageBatchRequestEntry sendr = new SendMessageBatchRequestEntry(msg.getId(), msg.getPayload());
 			batch.getEntries().add(sendr);
 		});
-		logger.debug("sending {} messages in batch", batch.getEntries().size());
+		logger.info("sending {}", batch.getEntries().size());
 		SendMessageBatchResult result = client.sendMessageBatch(batch);
-		logger.debug("send result: {} for SQS queue: {}", result.getFailed().toString(), queueName);
+		logger.info("send result {}", result.getFailed().toString());
 	}
 
 	@VisibleForTesting
@@ -300,7 +271,7 @@ public class SQSObservableQueue implements ObservableQueue {
 		try {
 			ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
 					.withQueueUrl(queueURL)
-					.withVisibilityTimeout(visibilityTimeoutInSeconds)
+					.withVisibilityTimeout(visibilityTimeout)
 					.withMaxNumberOfMessages(batchSize);
 
 			ReceiveMessageResult result = client.receiveMessage(receiveMessageRequest);
@@ -311,7 +282,7 @@ public class SQSObservableQueue implements ObservableQueue {
 			Monitors.recordEventQueueMessagesProcessed(QUEUE_TYPE, this.queueName, messages.size());
 			return messages;
 		} catch (Exception e) {
-			logger.error("Exception while getting messages from SQS", e);
+			logger.error("Exception while getting messages from SQS ", e);
 			Monitors.recordObservableQMessageReceivedErrors(QUEUE_TYPE);
 		}
 		return new ArrayList<>();
@@ -342,7 +313,8 @@ public class SQSObservableQueue implements ObservableQueue {
         List<String> failures = result.getFailed().stream()
 				.map(BatchResultErrorEntry::getId)
 				.collect(Collectors.toList());
-		logger.debug("Failed to delete messages from queue: {}: {}", queueName, failures);
+		logger.debug("Failed to delete: {}", failures);
         return failures;
+
     }
 }

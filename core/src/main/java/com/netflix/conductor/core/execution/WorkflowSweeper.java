@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+/**
+ *
  */
 package com.netflix.conductor.core.execution;
 
@@ -41,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 public class WorkflowSweeper {
 
-	private static final Logger logger = LoggerFactory.getLogger(WorkflowSweeper.class);
+	private static Logger logger = LoggerFactory.getLogger(WorkflowSweeper.class);
 
 	private ExecutorService executorService;
 
@@ -54,13 +57,13 @@ public class WorkflowSweeper {
 	private static final String className = WorkflowSweeper.class.getSimpleName();
 
 	@Inject
-	public WorkflowSweeper(WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService, Configuration config, QueueDAO queueDAO) {
+	public WorkflowSweeper(WorkflowExecutor workflowExecutor, Configuration config, QueueDAO queueDAO) {
 		this.config = config;
 		this.queueDAO = queueDAO;
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
 		if(this.executorThreadPoolSize > 0) {
 			this.executorService = Executors.newFixedThreadPool(executorThreadPoolSize);
-			init(workflowExecutor, workflowRepairService);
+			init(workflowExecutor);
 			logger.info("Workflow Sweeper Initialized");
 		} else {
 			logger.warn("Workflow sweeper is DISABLED");
@@ -68,7 +71,7 @@ public class WorkflowSweeper {
 
 	}
 
-	public void init(WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService) {
+	public void init(WorkflowExecutor workflowExecutor) {
 		ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
 		deciderPool.scheduleWithFixedDelay(() -> {
 			try {
@@ -77,13 +80,13 @@ public class WorkflowSweeper {
 					logger.info("Workflow sweep is disabled.");
 					return;
 				}
-				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.DECIDER_QUEUE, 2 * executorThreadPoolSize, 2000);
-				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
+				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.deciderQueue, 2 * executorThreadPoolSize, 2000);
+				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.deciderQueue);
 				logger.debug("Sweeper's current deciderqueue size: {}.", currentQueueSize);
 				int retrievedWorkflows = (workflowIds != null) ? workflowIds.size() : 0;
 				logger.debug("Sweeper retrieved {} workflows from the decider queue.", retrievedWorkflows);
 
-				sweep(workflowIds, workflowExecutor, workflowRepairService);
+				sweep(workflowIds, workflowExecutor);
 			} catch (Exception e) {
 				Monitors.error(className, "sweep");
 				logger.error("Error when sweeping workflow", e);
@@ -91,7 +94,7 @@ public class WorkflowSweeper {
 		}, 500, 500, TimeUnit.MILLISECONDS);
 	}
 
-	public void sweep(List<String> workflowIds, WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService) throws Exception {
+	public void sweep(List<String> workflowIds, WorkflowExecutor workflowExecutor) throws Exception {
 
 		List<Future<?>> futures = new LinkedList<>();
 		for (String workflowId : workflowIds) {
@@ -103,27 +106,20 @@ public class WorkflowSweeper {
 					if(logger.isDebugEnabled()) {
 						logger.debug("Running sweeper for workflow {}", workflowId);
 					}
-
-					if (config.isWorkflowRepairServiceEnabled()) {
-						// Verify and repair tasks in the workflow.
-						workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
-					}
-
 					boolean done = workflowExecutor.decide(workflowId);
 					if(!done) {
-						queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
+						queueDAO.setUnackTimeout(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency() * 1000);
 					} else {
-						queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
+						queueDAO.remove(WorkflowExecutor.deciderQueue, workflowId);
 					}
 
 				} catch (ApplicationException e) {
 					if(e.getCode().equals(Code.NOT_FOUND)) {
 						logger.error("Workflow NOT found for id: " + workflowId, e);
-						queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
+						queueDAO.remove(WorkflowExecutor.deciderQueue, workflowId);
 					}
 
 				} catch (Exception e) {
-					queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
 					Monitors.error(className, "sweep");
 					logger.error("Error running sweep for " + workflowId, e);
 				}
@@ -134,5 +130,7 @@ public class WorkflowSweeper {
 		for (Future<?> future : futures) {
 			future.get();
 		}
+
 	}
+
 }

@@ -1,5 +1,5 @@
-/*
- * Copyright 2018 Netflix, Inc.
+/**
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
 package com.netflix.conductor.core;
 
+
 /**
- * Store the authentication context, app or user name or both
+ * @author Viren
+ *
  */
 public class WorkflowContext {
 
-	public static final ThreadLocal<WorkflowContext> threadLocal = InheritableThreadLocal.withInitial(() -> new WorkflowContext("", ""));
+	public static final ThreadLocal<WorkflowContext> threadLocal = InheritableThreadLocal.withInitial(() -> new WorkflowContext(""));
 	
 	private String clientApp;
-
-	private String userName;
-
+    
+	
 	public WorkflowContext(String clientApp){
 		this.clientApp = clientApp;
-		this.userName = null;
-	}
-
-	public WorkflowContext(String clientApp, String userName){
-		this.clientApp = clientApp;
-		this.userName = userName;
 	}
 	
 	public static WorkflowContext get(){
@@ -53,13 +51,6 @@ public class WorkflowContext {
 	 */
 	public String getClientApp() {
 		return clientApp;
-	}
-
-	/**
-	 * @return the username
-	 */
-	public String getUserName() {
-		return userName;
 	}
 	
 }

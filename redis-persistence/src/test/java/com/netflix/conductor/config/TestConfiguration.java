@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 package com.netflix.conductor.config;
+/**
+ * 
+ */
 
-import com.netflix.conductor.core.config.Configuration;
 
 import java.util.Map;
+
+import com.netflix.conductor.core.config.Configuration;
 
 /**
  * @author Viren
@@ -39,17 +43,7 @@ public class TestConfiguration implements Configuration {
 	public boolean disableAsyncWorkers() {
 		return false;
 	}
-
-	@Override
-	public boolean isEventMessageIndexingEnabled() {
-		return true;
-	}
-
-	@Override
-	public boolean isEventExecutionIndexingEnabled() {
-		return true;
-	}
-
+	
 	@Override
 	public String getServerId() {
 		return "server_id";
@@ -74,75 +68,25 @@ public class TestConfiguration implements Configuration {
 	public String getProperty(String string, String def) {
 		return "dummy";
 	}
-
-    @Override
-    public boolean getBooleanProperty(String name, boolean defaultValue) {
-        return false;
-    }
-
-    @Override
+	
+	@Override
 	public String getAvailabilityZone() {
 		return "us-east-1a";
 	}
-
+	
 	@Override
 	public int getIntProperty(String string, int def) {
 		return 100;
 	}
-
+	
 	@Override
 	public String getRegion() {
 		return "us-east-1";
 	}
 
 	@Override
-	public Long getWorkflowInputPayloadSizeThresholdKB() {
-		return 5120L;
-	}
-
-	@Override
-	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
-
-	@Override
-	public Long getWorkflowOutputPayloadSizeThresholdKB() {
-		return 5120L;
-	}
-
-	@Override
-	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
-
-	@Override
-	public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
-		return 256L;
-	}
-
-	@Override
-	public Long getTaskInputPayloadSizeThresholdKB() {
-		return 3072L;
-	}
-
-	@Override
-	public Long getMaxTaskInputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
-
-	@Override
-	public Long getTaskOutputPayloadSizeThresholdKB() {
-		return 3072L;
-	}
-
-	@Override
-	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
-
-	@Override
 	public long getLongProperty(String name, long defaultValue) {
-		return 1000000L;
+		return 1000000l;
 	}
 
 	@Override

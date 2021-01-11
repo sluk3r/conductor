@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,93 +13,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
 package com.netflix.conductor.common.run;
 
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Objects;
 import java.util.TimeZone;
-import org.apache.commons.lang3.StringUtils;
+
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
 
 /**
  * @author Viren
  *
  */
-@ProtoMessage(fromProto = false)
 public class TaskSummary {
 
 	/**
 	 * The time should be stored as GMT
 	 */
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
-
-	@ProtoField(id = 1)
+	
 	private String workflowId;
 
-	@ProtoField(id = 2)
 	private String workflowType;
-
-	@ProtoField(id = 3)
+	
 	private String correlationId;
-
-	@ProtoField(id = 4)
+	
 	private String scheduledTime;
-
-	@ProtoField(id = 5)
+	
 	private String startTime;
-
-	@ProtoField(id = 6)
+	
 	private String updateTime;
-
-	@ProtoField(id = 7)
+	
 	private String endTime;
-
-	@ProtoField(id = 8)
+	
 	private Status status;
-
-	@ProtoField(id = 9)
+	
 	private String reasonForIncompletion;
-
-	@ProtoField(id = 10)
+	
 	private long executionTime;
-
-	@ProtoField(id = 11)
+	
 	private long queueWaitTime;
-
-	@ProtoField(id = 12)
+	
 	private String taskDefName;
-
-	@ProtoField(id = 13)
+	
 	private String taskType;
-
-	@ProtoField(id = 14)
+	
 	private String input;
-
-	@ProtoField(id = 15)
+	
 	private String output;
-
-	@ProtoField(id = 16)
+	
 	private String taskId;
-
-	@ProtoField(id = 17)
-	private String externalInputPayloadStoragePath;
-
-	@ProtoField(id = 18)
-	private String externalOutputPayloadStoragePath;
-
-	@ProtoField(id = 19)
-	private int workflowPriority;
-
-    public TaskSummary() {
-    }
-
+	
 	public TaskSummary(Task task) {
-
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     	sdf.setTimeZone(gmt);
     	
     	this.taskId = task.getTaskId();
@@ -107,7 +78,6 @@ public class TaskSummary {
     	this.taskType = task.getTaskType();
 		this.workflowId = task.getWorkflowInstanceId();
 		this.workflowType = task.getWorkflowType();
-		this.workflowPriority = task.getWorkflowPriority();
 		this.correlationId = task.getCorrelationId();
 		this.scheduledTime = sdf.format(new Date(task.getScheduledTime()));
 		this.startTime = sdf.format(new Date(task.getStartTime()));
@@ -127,13 +97,6 @@ public class TaskSummary {
 		
 		if(task.getEndTime() > 0){
 			this.executionTime = task.getEndTime() - task.getStartTime();
-		}
-
-		if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
-			this.externalInputPayloadStoragePath = task.getExternalInputPayloadStoragePath();
-		}
-		if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
-			this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
 		}
 	}
 
@@ -364,80 +327,6 @@ public class TaskSummary {
 	public void setTaskId(String taskId) {
 		this.taskId = taskId;
 	}
-
-	/**
-	 * @return the external storage path for the task input payload
-	 */
-	public String getExternalInputPayloadStoragePath() {
-		return externalInputPayloadStoragePath;
-	}
-
-	/**
-	 * @param externalInputPayloadStoragePath the external storage path where the task input payload is stored
-	 */
-	public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
-		this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
-	}
-
-	/**
-	 * @return the external storage path for the task output payload
-	 */
-	public String getExternalOutputPayloadStoragePath() {
-		return externalOutputPayloadStoragePath;
-	}
-
-	/**
-	 * @param externalOutputPayloadStoragePath the external storage path where the task output payload is stored
-	 */
-	public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
-		this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
-	}
-
-	/**
-	 * @return the priority defined on workflow
-	 */
-	public int getWorkflowPriority() {
-		return workflowPriority;
-	}
-
-	/**
-	 * @param workflowPriority Priority defined for workflow
-	 */
-	public void setWorkflowPriority(int workflowPriority) {
-		this.workflowPriority = workflowPriority;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		TaskSummary that = (TaskSummary) o;
-		return getExecutionTime() == that.getExecutionTime() &&
-			getQueueWaitTime() == that.getQueueWaitTime() &&
-			getWorkflowPriority() == that.getWorkflowPriority() &&
-			getWorkflowId().equals(that.getWorkflowId()) &&
-			getWorkflowType().equals(that.getWorkflowType()) &&
-			Objects.equals(getCorrelationId(), that.getCorrelationId()) &&
-			getScheduledTime().equals(that.getScheduledTime()) &&
-			Objects.equals(getStartTime(), that.getStartTime()) &&
-			Objects.equals(getUpdateTime(), that.getUpdateTime()) &&
-			Objects.equals(getEndTime(), that.getEndTime()) &&
-			getStatus() == that.getStatus() &&
-			Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion()) &&
-			Objects.equals(getTaskDefName(), that.getTaskDefName()) &&
-			getTaskType().equals(that.getTaskType()) &&
-			getTaskId().equals(that.getTaskId());
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(getWorkflowId(), getWorkflowType(), getCorrelationId(), getScheduledTime(), getStartTime(),
-			getUpdateTime(), getEndTime(), getStatus(), getReasonForIncompletion(), getExecutionTime(),
-			getQueueWaitTime(),
-			getTaskDefName(), getTaskType(), getTaskId(), getWorkflowPriority());
-	}
+	
+	
 }

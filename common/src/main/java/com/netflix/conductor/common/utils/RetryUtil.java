@@ -34,9 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-
-import static java.lang.String.format;
-
 /**
  * Utility class that deals with retries in case of transient failures.
  *
@@ -87,7 +84,6 @@ public class RetryUtil<T> {
      *                          <li>And a reference to the original exception generated during the last {@link Attempt} of the retry</li>
      *                          </ul>
      */
-    @SuppressWarnings("Guava")
     public T retryOnException(Supplier<T> supplierCommand,
                               Predicate<Throwable> throwablePredicate,
                               Predicate<T> resultRetryPredicate,
@@ -116,14 +112,14 @@ public class RetryUtil<T> {
         try {
             return retryer.call(supplierCommand::get);
         } catch (ExecutionException executionException) {
-            String errorMessage = format("Operation '%s:%s' failed for the %d time in RetryUtil", operationName,
+            String errorMessage = String.format("Operation '%s:%s' failed for the %d time in RetryUtil", operationName,
                     shortDescription, internalNumberOfRetries.get());
             logger.debug(errorMessage);
-            throw new RuntimeException(errorMessage, executionException.getCause());
+            throw new RuntimeException(errorMessage, executionException);
         } catch (RetryException retryException) {
-            String errorMessage = format("Operation '%s:%s' failed after retrying %d times, retry limit %d", operationName,
+            String errorMessage = String.format("Operation '%s:%s' failed after retrying %d times, retry limit %d", operationName,
                     shortDescription, internalNumberOfRetries.get(), 3);
-            logger.error(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
+            logger.debug(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
             throw new RuntimeException(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
         }
     }
